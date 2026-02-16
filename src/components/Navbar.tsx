@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Shield } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const navLinks = [
   { label: "Home", path: "/" },
@@ -20,9 +21,13 @@ const Navbar = () => {
     <nav className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
+          <motion.div
+            whileHover={{ rotate: 8, scale: 1.1 }}
+            transition={{ type: "spring", stiffness: 300 }}
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary"
+          >
             <Shield className="h-5 w-5 text-primary-foreground" />
-          </div>
+          </motion.div>
           <span className="text-xl font-bold text-foreground">VaultEdge</span>
         </Link>
 
@@ -32,13 +37,20 @@ const Navbar = () => {
             <Link
               key={link.path}
               to={link.path}
-              className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              className={`relative rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                 location.pathname === link.path
-                  ? "bg-secondary text-primary"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {link.label}
+              {location.pathname === link.path && (
+                <motion.div
+                  layoutId="nav-indicator"
+                  className="absolute inset-0 rounded-lg bg-secondary -z-10"
+                  transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                />
+              )}
             </Link>
           ))}
         </div>
@@ -62,32 +74,42 @@ const Navbar = () => {
       </div>
 
       {/* Mobile nav */}
-      {mobileOpen && (
-        <div className="border-t border-border bg-card px-4 pb-4 md:hidden animate-fade-in">
-          {navLinks.map((link) => (
-            <Link
-              key={link.path}
-              to={link.path}
-              onClick={() => setMobileOpen(false)}
-              className={`block rounded-lg px-3 py-2.5 text-sm font-medium ${
-                location.pathname === link.path
-                  ? "bg-secondary text-primary"
-                  : "text-muted-foreground"
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
-          <div className="mt-3 flex gap-2">
-            <Button variant="outline" size="sm" className="flex-1" asChild>
-              <Link to="/login" onClick={() => setMobileOpen(false)}>Sign In</Link>
-            </Button>
-            <Button size="sm" className="flex-1" asChild>
-              <Link to="/register" onClick={() => setMobileOpen(false)}>Get Started</Link>
-            </Button>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className="overflow-hidden border-t border-border bg-card md:hidden"
+          >
+            <div className="px-4 pb-4">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  onClick={() => setMobileOpen(false)}
+                  className={`block rounded-lg px-3 py-2.5 text-sm font-medium ${
+                    location.pathname === link.path
+                      ? "bg-secondary text-primary"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+              <div className="mt-3 flex gap-2">
+                <Button variant="outline" size="sm" className="flex-1" asChild>
+                  <Link to="/login" onClick={() => setMobileOpen(false)}>Sign In</Link>
+                </Button>
+                <Button size="sm" className="flex-1" asChild>
+                  <Link to="/register" onClick={() => setMobileOpen(false)}>Get Started</Link>
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 };

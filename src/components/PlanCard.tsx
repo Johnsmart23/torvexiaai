@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 
 interface PlanCardProps {
   name: string;
@@ -12,8 +13,9 @@ interface PlanCardProps {
 }
 
 const PlanCard = ({ name, dailyProfit, duration, capitalReturn, features, highlighted }: PlanCardProps) => (
-  <div
-    className={`relative rounded-xl border p-6 transition-all duration-200 ${
+  <motion.div
+    whileHover={{ y: -8, transition: { duration: 0.25 } }}
+    className={`relative rounded-xl border p-6 transition-shadow duration-200 ${
       highlighted
         ? "border-accent bg-card shadow-elevated scale-[1.02]"
         : "border-border bg-card shadow-card hover:shadow-elevated"
@@ -45,7 +47,7 @@ const PlanCard = ({ name, dailyProfit, duration, capitalReturn, features, highli
     >
       <Link to="/register">Start Investing</Link>
     </Button>
-  </div>
+  </motion.div>
 );
 
 export default PlanCard;
