@@ -11,8 +11,9 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [forgotMode, setForgotMode] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
@@ -22,6 +23,23 @@ const Login = () => {
       navigate("/dashboard");
     } catch (err: any) {
       toast.error(err.message || "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast.success("Password reset link sent! Check your email.");
+      setForgotMode(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to send reset link");
     } finally {
       setLoading(false);
     }
@@ -39,15 +57,38 @@ const Login = () => {
           </Link>
         </div>
         <div className="rounded-xl border border-border bg-card p-6 shadow-elevated">
-          <h1 className="text-xl font-bold text-foreground">Sign In</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Access your investment dashboard</p>
-          <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-            <Input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            <Button className="w-full" type="submit" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin" /> : "Sign In"}
-            </Button>
-          </form>
+          <h1 className="text-xl font-bold text-foreground">
+            {forgotMode ? "Reset Password" : "Sign In"}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {forgotMode ? "Enter your email to receive a reset link" : "Access your investment dashboard"}
+          </p>
+
+          {forgotMode ? (
+            <form className="mt-6 space-y-4" onSubmit={handleForgotPassword}>
+              <Input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <Button className="w-full" type="submit" disabled={loading}>
+                {loading ? <Loader2 className="animate-spin" /> : "Send Reset Link"}
+              </Button>
+              <button type="button" onClick={() => setForgotMode(false)} className="w-full text-sm text-primary hover:underline">
+                Back to Sign In
+              </button>
+            </form>
+          ) : (
+            <>
+              <form className="mt-6 space-y-4" onSubmit={handleLogin}>
+                <Input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <Button className="w-full" type="submit" disabled={loading}>
+                  {loading ? <Loader2 className="animate-spin" /> : "Sign In"}
+                </Button>
+              </form>
+              <button type="button" onClick={() => setForgotMode(true)} className="mt-3 w-full text-sm text-primary hover:underline">
+                Forgot password?
+              </button>
+            </>
+          )}
+
           <p className="mt-4 text-center text-sm text-muted-foreground">
             Don't have an account?{" "}
             <Link to="/register" className="text-primary font-medium hover:underline">Register</Link>
