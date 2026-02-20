@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,24 +16,29 @@ import {
   Loader2,
   ArrowLeft,
   UserCheck,
+  Camera,
 } from "lucide-react";
 
 const Profile = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [kycStatus, setKycStatus] = useState("pending");
   const [referralCode, setReferralCode] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user) return;
       const { data, error } = await supabase
         .from("profiles")
-        .select("full_name, phone, kyc_status, referral_code")
+        .select("full_name, phone, kyc_status, referral_code, avatar_url")
         .eq("user_id", user.id)
         .single();
       if (!error && data) {
@@ -41,11 +46,59 @@ const Profile = () => {
         setPhone(data.phone ?? "");
         setKycStatus(data.kyc_status ?? "pending");
         setReferralCode(data.referral_code ?? "");
+        setAvatarUrl(data.avatar_url ?? null);
       }
       setLoading(false);
     };
     fetchProfile();
   }, [user]);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type and size
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const filePath = `${user.id}/avatar.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
+
+      const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: publicUrl })
+        .eq("user_id", user.id);
+
+      if (updateError) throw updateError;
+
+      setAvatarUrl(publicUrl);
+      toast.success("Profile picture updated!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to upload image");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,6 +129,10 @@ const Profile = () => {
     rejected: { label: "Rejected", class: "text-destructive bg-destructive/10 border-destructive/30" },
   }[kycStatus] ?? { label: kycStatus, class: "text-muted-foreground bg-muted" };
 
+  const initials = fullName
+    ? fullName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    : user?.email?.[0]?.toUpperCase() ?? "?";
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -105,14 +162,44 @@ const Profile = () => {
       </header>
 
       <div className="container mx-auto max-w-2xl px-4 py-10">
-        {/* Avatar / name header */}
-        <div className="mb-8 flex items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 border-2 border-primary/20">
-            <User className="h-8 w-8 text-primary" />
+        {/* Avatar section */}
+        <div className="mb-8 flex items-center gap-5">
+          <div className="relative">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-primary/20 bg-primary/10 overflow-hidden">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Profile" className="h-full w-full object-cover" />
+              ) : (
+                <span className="text-2xl font-bold text-primary">{initials}</span>
+              )}
+            </div>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
+            >
+              {uploadingAvatar ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Camera className="h-3.5 w-3.5" />
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarUpload}
+            />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-foreground">{fullName || "Your Profile"}</h1>
             <p className="text-sm text-muted-foreground">{user?.email}</p>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="mt-1 text-xs text-primary hover:underline"
+            >
+              Change photo
+            </button>
           </div>
         </div>
 
