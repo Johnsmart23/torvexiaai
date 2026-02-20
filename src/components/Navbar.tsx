@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Shield, LayoutDashboard, LogOut } from "lucide-react";
+import { Menu, X, Shield, LayoutDashboard, LogOut, UserCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -71,6 +71,9 @@ const Navbar = () => {
               <Button variant="ghost" size="sm" asChild>
                 <Link to="/dashboard"><LayoutDashboard className="h-4 w-4 mr-1" />Dashboard</Link>
               </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/profile"><UserCircle className="h-4 w-4 mr-1" />Profile</Link>
+              </Button>
               <Button variant="outline" size="sm" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-1" />Sign Out
               </Button>
@@ -127,6 +130,11 @@ const Navbar = () => {
                     <Button variant="outline" size="sm" className="flex-1" asChild>
                       <Link to="/dashboard" onClick={() => setMobileOpen(false)}>
                         <LayoutDashboard className="h-4 w-4 mr-1" />Dashboard
+                      </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1" asChild>
+                      <Link to="/profile" onClick={() => setMobileOpen(false)}>
+                        <UserCircle className="h-4 w-4 mr-1" />Profile
                       </Link>
                     </Button>
                     <Button size="sm" className="flex-1" onClick={handleSignOut}>
