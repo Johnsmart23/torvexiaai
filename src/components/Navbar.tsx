@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Shield, LayoutDashboard, LogOut, UserCircle } from "lucide-react";
+import { Menu, X, Shield, LayoutDashboard, LogOut, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/use-profile";
 
 const navLinks = [
   { label: "Home", path: "/" },
@@ -14,18 +15,32 @@ const navLinks = [
   { label: "Contact", path: "/contact" },
 ];
 
+const AvatarBubble = ({ avatarUrl, initials }: { avatarUrl: string | null; initials: string }) => (
+  <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-primary/30 bg-primary/10 overflow-hidden shrink-0">
+    {avatarUrl ? (
+      <img src={avatarUrl} alt="Profile" className="h-full w-full object-cover" />
+    ) : (
+      <span className="text-xs font-bold text-primary">{initials}</span>
+    )}
+  </div>
+);
+
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const profile = useProfile();
+
+  const initials = profile?.full_name
+    ? profile.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+    : user?.email?.[0]?.toUpperCase() ?? "?";
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
     setMobileOpen(false);
   };
-
 
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-md">
@@ -65,17 +80,22 @@ const Navbar = () => {
           ))}
         </div>
 
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="hidden items-center gap-2 md:flex">
           {user ? (
             <>
               <Button variant="ghost" size="sm" asChild>
-                <Link to="/dashboard"><LayoutDashboard className="h-4 w-4 mr-1" />Dashboard</Link>
+                <Link to="/dashboard">
+                  <LayoutDashboard className="h-4 w-4 mr-1" />Dashboard
+                </Link>
               </Button>
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/profile"><UserCircle className="h-4 w-4 mr-1" />Profile</Link>
-              </Button>
+              <Link
+                to="/profile"
+                className="flex items-center gap-2 rounded-full border border-border px-2 py-1 hover:bg-secondary transition-colors"
+              >
+                <AvatarBubble avatarUrl={profile?.avatar_url ?? null} initials={initials} />
+              </Link>
               <Button variant="outline" size="sm" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-1" />Sign Out
+                <LogOut className="h-4 w-4" />
               </Button>
             </>
           ) : (
@@ -110,6 +130,20 @@ const Navbar = () => {
             className="overflow-hidden border-t border-border bg-card md:hidden"
           >
             <div className="px-4 pb-4">
+              {/* User info strip for mobile */}
+              {user && (
+                <Link
+                  to="/profile"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 rounded-lg px-3 py-3 mb-1 hover:bg-secondary transition-colors"
+                >
+                  <AvatarBubble avatarUrl={profile?.avatar_url ?? null} initials={initials} />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{profile?.full_name || "My Profile"}</p>
+                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  </div>
+                </Link>
+              )}
               {navLinks.map((link) => (
                 <Link
                   key={link.path}
@@ -130,11 +164,6 @@ const Navbar = () => {
                     <Button variant="outline" size="sm" className="flex-1" asChild>
                       <Link to="/dashboard" onClick={() => setMobileOpen(false)}>
                         <LayoutDashboard className="h-4 w-4 mr-1" />Dashboard
-                      </Link>
-                    </Button>
-                    <Button variant="outline" size="sm" className="flex-1" asChild>
-                      <Link to="/profile" onClick={() => setMobileOpen(false)}>
-                        <UserCircle className="h-4 w-4 mr-1" />Profile
                       </Link>
                     </Button>
                     <Button size="sm" className="flex-1" onClick={handleSignOut}>
