@@ -85,6 +85,28 @@ const Register = () => {
             >
               Open Email
             </Button>
+            <Button
+              variant="outline"
+              className="mt-2 w-full"
+              disabled={loading}
+              onClick={async () => {
+                setLoading(true);
+                try {
+                  const { error } = await supabase.auth.resend({
+                    type: "signup",
+                    email: form.email,
+                  });
+                  if (error) throw error;
+                  toast.success("Verification email resent!");
+                } catch (err: any) {
+                  toast.error(err.message || "Failed to resend email");
+                } finally {
+                  setLoading(false);
+                }
+              }}
+            >
+              {loading ? <Loader2 className="animate-spin h-4 w-4" /> : "Resend Verification Email"}
+            </Button>
             <p className="mt-4 text-xs text-muted-foreground">
               Already verified?{" "}
               <Link to="/login" className="text-primary font-medium hover:underline">Sign In</Link>
