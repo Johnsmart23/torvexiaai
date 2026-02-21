@@ -8,14 +8,14 @@ const plans = [
     dailyProfit: "1%",
     duration: "30 days",
     capitalReturn: "at maturity",
-    features: ["Min. deposit $100", "Daily profit accrual", "Capital returned at end of plan", "Standard support", "Reinvestment allowed"],
+    features: ["Min. deposit $10", "Daily profit accrual", "Capital returned at end of plan", "Standard support", "Reinvestment allowed"],
   },
   {
     name: "Silver",
     dailyProfit: "2.5%",
     duration: "30 days",
     capitalReturn: "at maturity",
-    features: ["Min. deposit $500", "Higher daily returns", "Capital returned at end of plan", "Priority support", "Reinvestment allowed"],
+    features: ["Min. deposit $50", "Higher daily returns", "Capital returned at end of plan", "Priority support", "Reinvestment allowed"],
     highlighted: true,
   },
   {
@@ -23,7 +23,7 @@ const plans = [
     dailyProfit: "4%",
     duration: "30 days",
     capitalReturn: "at maturity",
-    features: ["Min. deposit $1,000", "Maximum daily returns", "Capital returned at end of plan", "VIP dedicated support", "Exclusive investor benefits"],
+    features: ["Min. deposit $100", "Maximum daily returns", "Capital returned at end of plan", "VIP dedicated support", "Exclusive investor benefits"],
   },
 ];
 
@@ -60,7 +60,7 @@ const Plans = () => (
               ["Daily Profit", "1%", "2.5%", "4%"],
               ["Duration", "30 days", "30 days", "30 days"],
               ["Capital Return", "End of plan", "End of plan", "End of plan"],
-              ["Min. Deposit", "$100", "$500", "$1,000"],
+              ["Min. Deposit", "$10", "$50", "$100"],
               ["Reinvestment", "Yes", "Yes", "Yes"],
               ["Support Level", "Standard", "Priority", "VIP"],
             ].map(([feature, ...values]) => (
