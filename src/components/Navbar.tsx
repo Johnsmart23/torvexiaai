@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Shield, LayoutDashboard, LogOut, User } from "lucide-react";
+import { Menu, X, Shield, LayoutDashboard, LogOut, User, ShieldCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/use-profile";
+import { useAdmin } from "@/hooks/use-admin";
 
 const navLinks = [
   { label: "Home", path: "/" },
@@ -31,6 +32,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const profile = useProfile();
+  const { isAdmin } = useAdmin();
 
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
@@ -88,6 +90,13 @@ const Navbar = () => {
                   <LayoutDashboard className="h-4 w-4 mr-1" />Dashboard
                 </Link>
               </Button>
+              {isAdmin && (
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/admin">
+                    <ShieldCheck className="h-4 w-4 mr-1" />Admin
+                  </Link>
+                </Button>
+              )}
               <Link
                 to="/profile"
                 className="flex items-center gap-2 rounded-full border border-border px-2 py-1 hover:bg-secondary transition-colors"
@@ -166,6 +175,13 @@ const Navbar = () => {
                         <LayoutDashboard className="h-4 w-4 mr-1" />Dashboard
                       </Link>
                     </Button>
+                    {isAdmin && (
+                      <Button variant="outline" size="sm" className="flex-1" asChild>
+                        <Link to="/admin" onClick={() => setMobileOpen(false)}>
+                          <ShieldCheck className="h-4 w-4 mr-1" />Admin
+                        </Link>
+                      </Button>
+                    )}
                     <Button size="sm" className="flex-1" onClick={handleSignOut}>
                       <LogOut className="h-4 w-4 mr-1" />Sign Out
                     </Button>
