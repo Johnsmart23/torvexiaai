@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      investments: {
+        Row: {
+          amount: number
+          created_at: string
+          daily_rate: number
+          days_completed: number
+          duration_days: number
+          ends_at: string
+          id: string
+          plan_name: string
+          started_at: string
+          status: Database["public"]["Enums"]["investment_status"]
+          total_profit_earned: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          daily_rate: number
+          days_completed?: number
+          duration_days?: number
+          ends_at?: string
+          id?: string
+          plan_name: string
+          started_at?: string
+          status?: Database["public"]["Enums"]["investment_status"]
+          total_profit_earned?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          daily_rate?: number
+          days_completed?: number
+          duration_days?: number
+          ends_at?: string
+          id?: string
+          plan_name?: string
+          started_at?: string
+          status?: Database["public"]["Enums"]["investment_status"]
+          total_profit_earned?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -166,9 +214,20 @@ export type Database = {
         }
         Returns: boolean
       }
+      process_investment: {
+        Args: {
+          p_amount: number
+          p_daily_rate: number
+          p_duration_days: number
+          p_plan_name: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      investment_status: "active" | "completed" | "cancelled"
       transaction_status: "pending" | "completed" | "rejected" | "cancelled"
       transaction_type:
         | "deposit"
@@ -312,6 +371,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      investment_status: ["active", "completed", "cancelled"],
       transaction_status: ["pending", "completed", "rejected", "cancelled"],
       transaction_type: [
         "deposit",

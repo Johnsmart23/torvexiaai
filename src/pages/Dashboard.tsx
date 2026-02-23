@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import InvestDialog from "@/components/InvestDialog";
 import {
   Shield,
   Wallet,
@@ -43,13 +44,15 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [wallets, setWallets] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [investments, setInvestments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [kycStatus, setKycStatus] = useState("pending");
+  const [investOpen, setInvestOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const [walletsRes, txRes, profileRes] = await Promise.all([
+      const [walletsRes, txRes, profileRes, investRes] = await Promise.all([
         supabase.from("wallets").select("*").eq("user_id", user.id),
         supabase
           .from("transactions")
@@ -58,14 +61,38 @@ const Dashboard = () => {
           .order("created_at", { ascending: false })
           .limit(20),
         supabase.from("profiles").select("kyc_status").eq("user_id", user.id).single(),
+        supabase
+          .from("investments")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("status", "active")
+          .order("created_at", { ascending: false }),
       ]);
       setWallets(walletsRes.data || []);
       setTransactions(txRes.data || []);
+      setInvestments(investRes.data || []);
       setKycStatus(profileRes.data?.kyc_status || "pending");
       setLoading(false);
     };
     load();
   }, [user]);
+
+  const reload = () => {
+    if (!user) return;
+    setLoading(true);
+    const load = async () => {
+      const [walletsRes, txRes, investRes] = await Promise.all([
+        supabase.from("wallets").select("*").eq("user_id", user.id),
+        supabase.from("transactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+        supabase.from("investments").select("*").eq("user_id", user.id).eq("status", "active").order("created_at", { ascending: false }),
+      ]);
+      setWallets(walletsRes.data || []);
+      setTransactions(txRes.data || []);
+      setInvestments(investRes.data || []);
+      setLoading(false);
+    };
+    load();
+  };
 
   const fmt = (n: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
@@ -162,15 +189,51 @@ const Dashboard = () => {
         </div>
 
         {activeTab === "overview" ? (
-          <div className="mt-6 rounded-xl border border-border bg-card p-8 shadow-card text-center">
-            <BarChart3 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-lg font-semibold text-foreground">No Active Investments</h2>
-            <p className="text-sm text-muted-foreground mt-2">
-              Deposit funds and invest in a plan to start earning daily profits.
-            </p>
-            <Button className="mt-4" onClick={() => navigate("/plans")}>
-              View Plans
-            </Button>
+          <div className="mt-6 space-y-4">
+            {investments.length === 0 ? (
+              <div className="rounded-xl border border-border bg-card p-8 shadow-card text-center">
+                <BarChart3 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h2 className="text-lg font-semibold text-foreground">No Active Investments</h2>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Deposit funds and invest in a plan to start earning daily profits.
+                </p>
+                <Button className="mt-4" onClick={() => setInvestOpen(true)}>
+                  Invest Now
+                </Button>
+              </div>
+            ) : (
+              investments.map((inv: any) => {
+                const daysLeft = Math.max(0, inv.duration_days - inv.days_completed);
+                const progress = Math.round((inv.days_completed / inv.duration_days) * 100);
+                const dailyProfit = Number(inv.amount) * Number(inv.daily_rate) / 100;
+                return (
+                  <div key={inv.id} className="rounded-xl border border-border bg-card p-5 shadow-card">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <h3 className="font-semibold text-foreground">{inv.plan_name} Plan</h3>
+                        <p className="text-sm text-muted-foreground">Invested: {fmt(Number(inv.amount))}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-success">+{fmt(dailyProfit)}/day</p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-3 w-3" /> {daysLeft} days left
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-3 h-2 w-full rounded-full bg-secondary">
+                      <div
+                        className="h-2 rounded-full bg-primary transition-all"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                    <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+                      <span>Earned: {fmt(Number(inv.total_profit_earned))}</span>
+                      <span>{progress}% complete</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         ) : (
           <div className="mt-6 space-y-3">
@@ -219,13 +282,23 @@ const Dashboard = () => {
 
         {/* Quick actions */}
         <div className="mt-8 flex flex-wrap gap-3">
-          <Button variant="hero" size="lg">Deposit Funds</Button>
+          <Button variant="hero" size="lg" onClick={() => setInvestOpen(true)}>
+            <TrendingUp className="h-4 w-4 mr-1" /> Invest
+          </Button>
+          <Button variant="outline" size="lg">Deposit Funds</Button>
           <Button variant="outline" size="lg">Withdraw</Button>
           <Button variant="secondary" size="lg">
             <Users className="h-4 w-4" /> Referral Link
           </Button>
         </div>
       </div>
+
+      <InvestDialog
+        open={investOpen}
+        onOpenChange={setInvestOpen}
+        depositBalance={Number(wallets.find((w: any) => w.wallet_type === "deposit")?.balance || 0)}
+        onSuccess={reload}
+      />
     </div>
   );
 };
