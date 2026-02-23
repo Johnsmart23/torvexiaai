@@ -17,6 +17,9 @@ import {
   Clock,
   UserCheck,
   Ban,
+  ArrowDownLeft,
+  ArrowUpRight,
+  TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,9 +48,17 @@ const Admin = () => {
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [financeData, setFinanceData] = useState<{
+    totalDeposits: number;
+    totalWithdrawals: number;
+    pendingWithdrawals: number;
+    totalProfitPaid: number;
+    pendingTx: any[];
+  }>({ totalDeposits: 0, totalWithdrawals: 0, pendingWithdrawals: 0, totalProfitPaid: 0, pendingTx: [] });
 
   useEffect(() => {
     fetchProfiles();
+    fetchFinance();
   }, []);
 
   const fetchProfiles = async () => {
@@ -62,6 +73,19 @@ const Admin = () => {
       setProfiles(data || []);
     }
     setLoading(false);
+  };
+
+  const fetchFinance = async () => {
+    const { data: txs } = await supabase.from("transactions").select("*");
+    const all = txs || [];
+    const completed = all.filter((t: any) => t.status === "completed");
+    setFinanceData({
+      totalDeposits: completed.filter((t: any) => t.transaction_type === "deposit").reduce((s: number, t: any) => s + Number(t.amount), 0),
+      totalWithdrawals: completed.filter((t: any) => t.transaction_type === "withdrawal").reduce((s: number, t: any) => s + Number(t.amount), 0),
+      totalProfitPaid: completed.filter((t: any) => t.transaction_type === "profit").reduce((s: number, t: any) => s + Number(t.amount), 0),
+      pendingWithdrawals: all.filter((t: any) => t.transaction_type === "withdrawal" && t.status === "pending").reduce((s: number, t: any) => s + Number(t.amount), 0),
+      pendingTx: all.filter((t: any) => t.status === "pending").sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+    });
   };
 
   const updateKyc = async (profileId: string, status: string) => {
@@ -261,12 +285,71 @@ const Admin = () => {
 
         {/* Finance Tab */}
         {activeTab === "finance" && (
-          <div className="rounded-xl border border-border bg-card p-8 shadow-card text-center">
-            <DollarSign className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-lg font-semibold text-foreground">Financial Dashboard</h2>
-            <p className="text-sm text-muted-foreground mt-2">
-              Deposit/withdrawal approvals and platform revenue tracking will be available once the wallet system is built.
-            </p>
+          <div className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                { label: "Total Deposits", value: financeData.totalDeposits, icon: ArrowDownLeft, color: "text-success" },
+                { label: "Total Withdrawals", value: financeData.totalWithdrawals, icon: ArrowUpRight, color: "text-destructive" },
+                { label: "Profit Paid Out", value: financeData.totalProfitPaid, icon: TrendingUp, color: "text-primary" },
+                { label: "Pending Withdrawals", value: financeData.pendingWithdrawals, icon: Clock, color: "text-warning" },
+              ].map((s) => (
+                <div key={s.label} className="rounded-xl border border-border bg-card p-5 shadow-card">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">{s.label}</span>
+                    <s.icon className={`h-5 w-5 ${s.color}`} />
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-foreground">
+                    {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(s.value)}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <h3 className="text-lg font-semibold text-foreground">Pending Transactions</h3>
+            {financeData.pendingTx.length === 0 ? (
+              <p className="text-muted-foreground text-sm py-4 text-center">No pending transactions.</p>
+            ) : (
+              <div className="space-y-3">
+                {financeData.pendingTx.map((tx: any) => (
+                  <div key={tx.id} className="flex items-center gap-3 rounded-lg border border-border bg-card p-4 shadow-card">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground capitalize">{tx.transaction_type.replace("_", " ")}</p>
+                      <p className="text-xs text-muted-foreground">User: {tx.user_id.slice(0, 8)}...</p>
+                      <p className="text-xs text-muted-foreground">{new Date(tx.created_at).toLocaleDateString()}</p>
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">
+                      {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(tx.amount))}
+                    </p>
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-success border-success/30 hover:bg-success/10"
+                        onClick={async () => {
+                          await supabase.from("transactions").update({ status: "completed", approved_by: user?.id }).eq("id", tx.id);
+                          toast.success("Transaction approved");
+                          fetchFinance();
+                        }}
+                      >
+                        <CheckCircle className="h-3 w-3 mr-1" /> Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                        onClick={async () => {
+                          await supabase.from("transactions").update({ status: "rejected", approved_by: user?.id }).eq("id", tx.id);
+                          toast.success("Transaction rejected");
+                          fetchFinance();
+                        }}
+                      >
+                        <XCircle className="h-3 w-3 mr-1" /> Reject
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
