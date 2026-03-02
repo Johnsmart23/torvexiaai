@@ -1,0 +1,319 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Search,
+  CheckCircle,
+  XCircle,
+  UserCheck,
+  Ban,
+  Clock,
+  ChevronDown,
+  ChevronUp,
+  Wallet,
+} from "lucide-react";
+import { toast } from "sonner";
+
+interface UserProfile {
+  id: string;
+  user_id: string;
+  full_name: string | null;
+  phone: string | null;
+  kyc_status: string;
+  is_admin: boolean;
+  is_suspended: boolean;
+  created_at: string;
+  referral_code: string | null;
+}
+
+const kycColors: Record<string, string> = {
+  pending: "bg-warning/10 text-warning border-warning/30",
+  approved: "bg-success/10 text-success border-success/30",
+  rejected: "bg-destructive/10 text-destructive border-destructive/30",
+};
+
+const fmt = (n: number) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
+
+const AdminUserManagement = () => {
+  const [profiles, setProfiles] = useState<UserProfile[]>([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [expandedUser, setExpandedUser] = useState<string | null>(null);
+  const [userWallets, setUserWallets] = useState<any[]>([]);
+  const [userTxs, setUserTxs] = useState<any[]>([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  useEffect(() => {
+    fetchProfiles();
+  }, []);
+
+  const fetchProfiles = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) toast.error("Failed to load users");
+    else setProfiles(data || []);
+    setLoading(false);
+  };
+
+  const updateKyc = async (profileId: string, status: string) => {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ kyc_status: status })
+      .eq("id", profileId);
+    if (error) toast.error("Failed to update KYC");
+    else {
+      toast.success(`KYC ${status}`);
+      setProfiles((prev) =>
+        prev.map((p) => (p.id === profileId ? { ...p, kyc_status: status } : p))
+      );
+    }
+  };
+
+  const toggleSuspend = async (profileId: string, currentlySuspended: boolean) => {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ is_suspended: !currentlySuspended })
+      .eq("id", profileId);
+    if (error) toast.error("Failed to update user");
+    else {
+      toast.success(currentlySuspended ? "User unsuspended" : "User suspended");
+      setProfiles((prev) =>
+        prev.map((p) =>
+          p.id === profileId ? { ...p, is_suspended: !currentlySuspended } : p
+        )
+      );
+    }
+  };
+
+  const toggleExpand = async (userId: string) => {
+    if (expandedUser === userId) {
+      setExpandedUser(null);
+      return;
+    }
+    setExpandedUser(userId);
+    setDetailLoading(true);
+    const [walletsRes, txRes] = await Promise.all([
+      supabase.from("wallets").select("*").eq("user_id", userId),
+      supabase
+        .from("transactions")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(10),
+    ]);
+    setUserWallets(walletsRes.data || []);
+    setUserTxs(txRes.data || []);
+    setDetailLoading(false);
+  };
+
+  const filtered = profiles.filter((p) => {
+    const q = search.toLowerCase();
+    return (
+      !q ||
+      p.full_name?.toLowerCase().includes(q) ||
+      p.phone?.toLowerCase().includes(q) ||
+      p.user_id.toLowerCase().includes(q)
+    );
+  });
+
+  const stats = {
+    total: profiles.length,
+    kycPending: profiles.filter((p) => p.kyc_status === "pending").length,
+    kycApproved: profiles.filter((p) => p.kyc_status === "approved").length,
+    suspended: profiles.filter((p) => p.is_suspended).length,
+  };
+
+  return (
+    <div>
+      {/* Stats row */}
+      <div className="grid gap-4 sm:grid-cols-4 mb-6">
+        {[
+          { label: "Total Users", value: stats.total },
+          { label: "KYC Pending", value: stats.kycPending },
+          { label: "KYC Approved", value: stats.kycApproved },
+          { label: "Suspended", value: stats.suspended },
+        ].map((s) => (
+          <div key={s.label} className="rounded-xl border border-border bg-card p-4 shadow-card text-center">
+            <p className="text-sm text-muted-foreground">{s.label}</p>
+            <p className="text-2xl font-bold text-foreground">{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Search */}
+      <div className="mb-4 flex items-center gap-2">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search users..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Button variant="outline" size="sm" onClick={fetchProfiles}>
+          Refresh
+        </Button>
+      </div>
+
+      {loading ? (
+        <p className="text-muted-foreground text-sm py-8 text-center">Loading users...</p>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((p) => (
+            <div key={p.id} className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
+              <div className="flex flex-wrap items-center gap-4 p-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-sm shrink-0">
+                  {p.full_name?.charAt(0)?.toUpperCase() || "?"}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-foreground truncate">
+                    {p.full_name || "No name"}
+                    {p.is_suspended && (
+                      <Badge variant="outline" className="ml-2 bg-destructive/10 text-destructive border-destructive/30 text-xs">
+                        Suspended
+                      </Badge>
+                    )}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">{p.phone || "No phone"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Joined {new Date(p.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <Badge variant="outline" className={kycColors[p.kyc_status] || ""}>
+                  {p.kyc_status}
+                </Badge>
+                <div className="flex gap-1 flex-wrap">
+                  {p.kyc_status === "pending" && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-success border-success/30 hover:bg-success/10"
+                        onClick={() => updateKyc(p.id, "approved")}
+                      >
+                        <CheckCircle className="h-3 w-3 mr-1" /> Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                        onClick={() => updateKyc(p.id, "rejected")}
+                      >
+                        <XCircle className="h-3 w-3 mr-1" /> Reject
+                      </Button>
+                    </>
+                  )}
+                  {p.kyc_status === "approved" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                      onClick={() => updateKyc(p.id, "rejected")}
+                    >
+                      <Ban className="h-3 w-3 mr-1" /> Revoke
+                    </Button>
+                  )}
+                  {p.kyc_status === "rejected" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-success border-success/30 hover:bg-success/10"
+                      onClick={() => updateKyc(p.id, "approved")}
+                    >
+                      <UserCheck className="h-3 w-3 mr-1" /> Re-approve
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => toggleSuspend(p.id, p.is_suspended)}
+                    className={p.is_suspended ? "text-success border-success/30" : "text-destructive border-destructive/30"}
+                  >
+                    {p.is_suspended ? "Unsuspend" : "Suspend"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => toggleExpand(p.user_id)}
+                  >
+                    {expandedUser === p.user_id ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Expanded detail */}
+              {expandedUser === p.user_id && (
+                <div className="border-t border-border bg-muted/30 p-4 space-y-4">
+                  {detailLoading ? (
+                    <p className="text-sm text-muted-foreground text-center">Loading...</p>
+                  ) : (
+                    <>
+                      <div>
+                        <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1">
+                          <Wallet className="h-4 w-4" /> Wallets
+                        </h4>
+                        <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                          {userWallets.map((w: any) => (
+                            <div key={w.id} className="rounded-lg border border-border bg-card p-3 text-center">
+                              <p className="text-xs text-muted-foreground capitalize">
+                                {w.wallet_type.replace("_", " ")}
+                              </p>
+                              <p className="text-sm font-bold text-foreground">{fmt(Number(w.balance))}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1">
+                          <Clock className="h-4 w-4" /> Recent Transactions
+                        </h4>
+                        {userTxs.length === 0 ? (
+                          <p className="text-xs text-muted-foreground">No transactions</p>
+                        ) : (
+                          <div className="space-y-1">
+                            {userTxs.map((tx: any) => (
+                              <div key={tx.id} className="flex items-center gap-2 text-xs rounded-lg border border-border bg-card p-2">
+                                <span className="capitalize font-medium text-foreground">
+                                  {tx.transaction_type.replace("_", " ")}
+                                </span>
+                                <span className="text-muted-foreground">•</span>
+                                <span className="font-semibold text-foreground">{fmt(Number(tx.amount))}</span>
+                                <span className="text-muted-foreground">•</span>
+                                <Badge variant="outline" className="text-[10px] py-0">
+                                  {tx.status}
+                                </Badge>
+                                <span className="ml-auto text-muted-foreground">
+                                  {new Date(tx.created_at).toLocaleDateString()}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+          {filtered.length === 0 && (
+            <p className="text-muted-foreground text-sm py-8 text-center">No users found.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AdminUserManagement;

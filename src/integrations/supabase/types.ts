@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      investment_plans: {
+        Row: {
+          created_at: string
+          daily_rate: number
+          duration_days: number
+          id: string
+          is_active: boolean
+          max_deposit: number | null
+          min_deposit: number
+          name: string
+          referral_bonus: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          daily_rate: number
+          duration_days?: number
+          id?: string
+          is_active?: boolean
+          max_deposit?: number | null
+          min_deposit?: number
+          name: string
+          referral_bonus?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          daily_rate?: number
+          duration_days?: number
+          id?: string
+          is_active?: boolean
+          max_deposit?: number | null
+          min_deposit?: number
+          name?: string
+          referral_bonus?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       investments: {
         Row: {
           amount: number
@@ -69,6 +108,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_admin: boolean
+          is_suspended: boolean
           kyc_status: string
           phone: string | null
           referral_code: string | null
@@ -82,6 +122,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_admin?: boolean
+          is_suspended?: boolean
           kyc_status?: string
           phone?: string | null
           referral_code?: string | null
@@ -95,6 +136,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_admin?: boolean
+          is_suspended?: boolean
           kyc_status?: string
           phone?: string | null
           referral_code?: string | null
@@ -207,6 +249,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_deposit: {
+        Args: { p_admin_id: string; p_transaction_id: string }
+        Returns: Json
+      }
+      approve_withdrawal: {
+        Args: { p_admin_id: string; p_transaction_id: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
