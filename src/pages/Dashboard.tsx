@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import InvestDialog from "@/components/InvestDialog";
+import DepositDialog from "@/components/DepositDialog";
 import {
   Shield,
   Wallet,
@@ -48,6 +49,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [kycStatus, setKycStatus] = useState("pending");
   const [investOpen, setInvestOpen] = useState(false);
+  const [depositOpen, setDepositOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -285,7 +287,7 @@ const Dashboard = () => {
           <Button variant="hero" size="lg" onClick={() => setInvestOpen(true)}>
             <TrendingUp className="h-4 w-4 mr-1" /> Invest
           </Button>
-          <Button variant="outline" size="lg">Deposit Funds</Button>
+          <Button variant="outline" size="lg" onClick={() => setDepositOpen(true)}>Deposit Funds</Button>
           <Button variant="outline" size="lg">Withdraw</Button>
           <Button variant="secondary" size="lg">
             <Users className="h-4 w-4" /> Referral Link
@@ -297,6 +299,11 @@ const Dashboard = () => {
         open={investOpen}
         onOpenChange={setInvestOpen}
         depositBalance={Number(wallets.find((w: any) => w.wallet_type === "deposit")?.balance || 0)}
+        onSuccess={reload}
+      />
+      <DepositDialog
+        open={depositOpen}
+        onOpenChange={setDepositOpen}
         onSuccess={reload}
       />
     </div>
