@@ -26,6 +26,7 @@ const AdminFinanceDashboard = () => {
     pendingWithdrawals: 0,
     todayDeposits: 0,
     todayWithdrawals: 0,
+    companyBalance: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -34,10 +35,11 @@ const AdminFinanceDashboard = () => {
   }, []);
 
   const fetchStats = async () => {
-    const [profilesRes, txRes, investRes] = await Promise.all([
+    const [profilesRes, txRes, investRes, companyRes] = await Promise.all([
       supabase.from("profiles").select("id", { count: "exact", head: true }),
       supabase.from("transactions").select("*"),
       supabase.from("investments").select("*").eq("status", "active"),
+      supabase.from("company_wallet").select("balance").limit(1).single(),
     ]);
 
     const txs = txRes.data || [];
@@ -79,6 +81,7 @@ const AdminFinanceDashboard = () => {
       todayWithdrawals: todayCompleted
         .filter((t: any) => t.transaction_type === "withdrawal")
         .reduce((s: number, t: any) => s + Number(t.amount), 0),
+      companyBalance: Number(companyRes.data?.balance || 0),
     });
     setLoading(false);
   };
@@ -89,7 +92,7 @@ const AdminFinanceDashboard = () => {
     { label: "Total Withdrawals", value: fmt(stats.totalWithdrawals), icon: ArrowUpRight, color: "text-destructive" },
     { label: "Profit Paid Out", value: fmt(stats.totalProfitPaid), icon: TrendingUp, color: "text-primary" },
     { label: "Active Investments", value: `${stats.activeInvestments} (${fmt(stats.activeInvestmentValue)})`, icon: BarChart3, color: "text-accent" },
-    { label: "Company Balance", value: fmt(stats.totalDeposits - stats.totalWithdrawals - stats.totalProfitPaid), icon: Wallet, color: "text-success" },
+    { label: "Company Balance", value: fmt(stats.companyBalance), icon: Wallet, color: "text-success" },
     { label: "Pending Deposits", value: fmt(stats.pendingDeposits), icon: Clock, color: "text-warning" },
     { label: "Pending Withdrawals", value: fmt(stats.pendingWithdrawals), icon: Clock, color: "text-warning" },
     { label: "Today's Deposits", value: fmt(stats.todayDeposits), icon: DollarSign, color: "text-success" },

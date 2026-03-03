@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      company_wallet: {
+        Row: {
+          balance: number
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       investment_plans: {
         Row: {
           created_at: string
@@ -249,6 +267,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_transfer_to_user: {
+        Args: {
+          p_admin_id: string
+          p_amount: number
+          p_note?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       approve_deposit: {
         Args: { p_admin_id: string; p_transaction_id: string }
         Returns: Json
