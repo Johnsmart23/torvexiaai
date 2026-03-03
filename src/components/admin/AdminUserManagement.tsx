@@ -1,8 +1,17 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import {
   Search,
   CheckCircle,
@@ -13,6 +22,8 @@ import {
   ChevronDown,
   ChevronUp,
   Wallet,
+  Send,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -38,6 +49,7 @@ const fmt = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
 
 const AdminUserManagement = () => {
+  const { user: adminUser } = useAuth();
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -45,6 +57,11 @@ const AdminUserManagement = () => {
   const [userWallets, setUserWallets] = useState<any[]>([]);
   const [userTxs, setUserTxs] = useState<any[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
+  // Transfer dialog state
+  const [transferTarget, setTransferTarget] = useState<UserProfile | null>(null);
+  const [transferAmount, setTransferAmount] = useState("");
+  const [transferNote, setTransferNote] = useState("");
+  const [transferring, setTransferring] = useState(false);
 
   useEffect(() => {
     fetchProfiles();
@@ -112,6 +129,35 @@ const AdminUserManagement = () => {
     setDetailLoading(false);
   };
 
+  const handleTransfer = async () => {
+    if (!adminUser || !transferTarget) return;
+    const amt = parseFloat(transferAmount);
+    if (isNaN(amt) || amt <= 0) {
+      toast.error("Enter a valid amount");
+      return;
+    }
+    setTransferring(true);
+    const { data, error } = await supabase.rpc("admin_transfer_to_user", {
+      p_admin_id: adminUser.id,
+      p_user_id: transferTarget.user_id,
+      p_amount: amt,
+      p_note: transferNote.trim(),
+    });
+    if (error || !(data as any)?.success) {
+      toast.error((data as any)?.error || "Transfer failed");
+    } else {
+      toast.success(`${fmt(amt)} transferred to ${transferTarget.full_name || "user"}`);
+      setTransferTarget(null);
+      setTransferAmount("");
+      setTransferNote("");
+      if (expandedUser === transferTarget.user_id) {
+        toggleExpand(transferTarget.user_id);
+        setTimeout(() => toggleExpand(transferTarget.user_id), 100);
+      }
+    }
+    setTransferring(false);
+  };
+
   const filtered = profiles.filter((p) => {
     const q = search.toLowerCase();
     return (
@@ -130,6 +176,7 @@ const AdminUserManagement = () => {
   };
 
   return (
+    <>
     <div>
       {/* Stats row */}
       <div className="grid gap-4 sm:grid-cols-4 mb-6">
@@ -273,6 +320,14 @@ const AdminUserManagement = () => {
                             </div>
                           ))}
                         </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="mt-2 text-primary border-primary/30 hover:bg-primary/10"
+                          onClick={() => setTransferTarget(p)}
+                        >
+                          <Send className="h-3 w-3 mr-1" /> Transfer Funds
+                        </Button>
                       </div>
                       <div>
                         <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1">
@@ -313,6 +368,49 @@ const AdminUserManagement = () => {
         </div>
       )}
     </div>
+      {/* Transfer Dialog */}
+      <Dialog open={!!transferTarget} onOpenChange={(o) => { if (!o) { setTransferTarget(null); setTransferAmount(""); setTransferNote(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5 text-primary" /> Transfer Funds to User
+            </DialogTitle>
+            <DialogDescription>
+              Send funds from company wallet to {transferTarget?.full_name || "this user"}'s deposit wallet.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Amount (USD)</Label>
+              <Input
+                type="number"
+                min="1"
+                placeholder="e.g. 500"
+                value={transferAmount}
+                onChange={(e) => setTransferAmount(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Note (optional)</Label>
+              <Input
+                placeholder="e.g. Deposit confirmation"
+                value={transferNote}
+                onChange={(e) => setTransferNote(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => { setTransferTarget(null); setTransferAmount(""); setTransferNote(""); }}>
+                Cancel
+              </Button>
+              <Button className="flex-1" onClick={handleTransfer} disabled={transferring}>
+                {transferring ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                Send Funds
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
