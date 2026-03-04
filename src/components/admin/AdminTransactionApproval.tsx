@@ -26,7 +26,21 @@ const AdminTransactionApproval = () => {
       .select("*")
       .eq("status", "pending")
       .order("created_at", { ascending: false });
-    setPendingTx(data || []);
+
+    // Fetch user names for display
+    const txs = data || [];
+    if (txs.length > 0) {
+      const userIds = [...new Set(txs.map((t: any) => t.user_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .in("user_id", userIds);
+      const nameMap: Record<string, string> = {};
+      (profiles || []).forEach((p: any) => { nameMap[p.user_id] = p.full_name || "Unknown"; });
+      txs.forEach((t: any) => { t._user_name = nameMap[t.user_id] || "Unknown"; });
+    }
+
+    setPendingTx(txs);
     setLoading(false);
   };
 
@@ -34,33 +48,43 @@ const AdminTransactionApproval = () => {
     if (!user) return;
     setProcessing(tx.id);
 
-    if (tx.transaction_type === "deposit") {
-      const { data, error } = await supabase.rpc("approve_deposit", {
-        p_transaction_id: tx.id,
-        p_admin_id: user.id,
-      });
-      if (error || !(data as any)?.success) {
-        toast.error((data as any)?.error || "Failed to approve deposit");
+    try {
+      if (tx.transaction_type === "deposit") {
+        const { data, error } = await supabase.rpc("approve_deposit", {
+          p_transaction_id: tx.id,
+          p_admin_id: user.id,
+        });
+        console.log("Approve deposit response:", { data, error });
+        if (error) {
+          toast.error(error.message || "Failed to approve deposit");
+        } else if (data && typeof data === "object" && !(data as any).success) {
+          toast.error((data as any).error || "Failed to approve deposit");
+        } else {
+          toast.success("Deposit approved — company wallet debited & user wallet credited");
+        }
+      } else if (tx.transaction_type === "withdrawal") {
+        const { data, error } = await supabase.rpc("approve_withdrawal", {
+          p_transaction_id: tx.id,
+          p_admin_id: user.id,
+        });
+        console.log("Approve withdrawal response:", { data, error });
+        if (error) {
+          toast.error(error.message || "Failed to approve withdrawal");
+        } else if (data && typeof data === "object" && !(data as any).success) {
+          toast.error((data as any).error || "Failed to approve withdrawal");
+        } else {
+          toast.success("Withdrawal approved & wallet debited");
+        }
       } else {
-        toast.success("Deposit approved & wallet credited");
+        await supabase
+          .from("transactions")
+          .update({ status: "completed", approved_by: user.id })
+          .eq("id", tx.id);
+        toast.success("Transaction approved");
       }
-    } else if (tx.transaction_type === "withdrawal") {
-      const { data, error } = await supabase.rpc("approve_withdrawal", {
-        p_transaction_id: tx.id,
-        p_admin_id: user.id,
-      });
-      if (error || !(data as any)?.success) {
-        toast.error((data as any)?.error || "Failed to approve withdrawal");
-      } else {
-        toast.success("Withdrawal approved & wallet debited");
-      }
-    } else {
-      // Generic approval for other types
-      await supabase
-        .from("transactions")
-        .update({ status: "completed", approved_by: user.id })
-        .eq("id", tx.id);
-      toast.success("Transaction approved");
+    } catch (err: any) {
+      console.error("Approval error:", err);
+      toast.error(err?.message || "An unexpected error occurred");
     }
 
     setProcessing(null);
@@ -110,7 +134,7 @@ const AdminTransactionApproval = () => {
                 <p className="text-sm font-medium text-foreground capitalize">
                   {tx.transaction_type.replace("_", " ")}
                 </p>
-                <p className="text-xs text-muted-foreground">User: {tx.user_id.slice(0, 8)}...</p>
+                <p className="text-xs text-muted-foreground">User: {tx._user_name || tx.user_id.slice(0, 8) + "..."}</p>
                 {tx.description && (
                   <p className="text-xs text-muted-foreground mt-1 truncate max-w-md">
                     {tx.description}
