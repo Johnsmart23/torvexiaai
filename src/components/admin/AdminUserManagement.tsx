@@ -137,23 +137,31 @@ const AdminUserManagement = () => {
       return;
     }
     setTransferring(true);
-    const { data, error } = await supabase.rpc("admin_transfer_to_user", {
-      p_admin_id: adminUser.id,
-      p_user_id: transferTarget.user_id,
-      p_amount: amt,
-      p_note: transferNote.trim(),
-    });
-    if (error || !(data as any)?.success) {
-      toast.error((data as any)?.error || "Transfer failed");
-    } else {
-      toast.success(`${fmt(amt)} transferred to ${transferTarget.full_name || "user"}`);
-      setTransferTarget(null);
-      setTransferAmount("");
-      setTransferNote("");
-      if (expandedUser === transferTarget.user_id) {
-        toggleExpand(transferTarget.user_id);
-        setTimeout(() => toggleExpand(transferTarget.user_id), 100);
+    try {
+      const { data, error } = await supabase.rpc("admin_transfer_to_user", {
+        p_admin_id: adminUser.id,
+        p_user_id: transferTarget.user_id,
+        p_amount: amt,
+        p_note: transferNote.trim(),
+      });
+      console.log("Transfer response:", { data, error });
+      if (error) {
+        toast.error(error.message || "Transfer failed");
+      } else if (data && typeof data === "object" && !(data as any).success) {
+        toast.error((data as any).error || "Transfer failed");
+      } else {
+        toast.success(`${fmt(amt)} transferred to ${transferTarget.full_name || "user"}`);
+        setTransferTarget(null);
+        setTransferAmount("");
+        setTransferNote("");
+        if (expandedUser === transferTarget.user_id) {
+          toggleExpand(transferTarget.user_id);
+          setTimeout(() => toggleExpand(transferTarget.user_id), 100);
+        }
       }
+    } catch (err: any) {
+      console.error("Transfer error:", err);
+      toast.error(err?.message || "An unexpected error occurred");
     }
     setTransferring(false);
   };
