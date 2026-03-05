@@ -47,7 +47,7 @@ const Register = () => {
             phone: form.phone,
             referral_code: form.referralCode || null,
           },
-          emailRedirectTo: `${window.location.origin}/dashboard`,
+          emailRedirectTo: `https://investsphere-pro.vercel.app/dashboard`,
         },
       });
       if (error) throw error;
