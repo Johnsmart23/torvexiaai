@@ -15,9 +15,9 @@ import {
   Copy,
   Loader2,
   ArrowLeft,
-  UserCheck,
   Camera,
 } from "lucide-react";
+import KycUploadSection from "@/components/profile/KycUploadSection";
 
 const Profile = () => {
   const { user, signOut } = useAuth();
@@ -30,6 +30,8 @@ const Profile = () => {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [kycStatus, setKycStatus] = useState("pending");
+  const [kycDocumentUrl, setKycDocumentUrl] = useState<string | null>(null);
+  const [kycRejectionReason, setKycRejectionReason] = useState<string | null>(null);
   const [referralCode, setReferralCode] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
@@ -38,7 +40,7 @@ const Profile = () => {
       if (!user) return;
       const { data, error } = await supabase
         .from("profiles")
-        .select("full_name, phone, kyc_status, referral_code, avatar_url")
+        .select("full_name, phone, kyc_status, referral_code, avatar_url, kyc_document_url, kyc_rejection_reason")
         .eq("user_id", user.id)
         .single();
       if (!error && data) {
@@ -47,6 +49,8 @@ const Profile = () => {
         setKycStatus(data.kyc_status ?? "pending");
         setReferralCode(data.referral_code ?? "");
         setAvatarUrl(data.avatar_url ?? null);
+        setKycDocumentUrl((data as any).kyc_document_url ?? null);
+        setKycRejectionReason((data as any).kyc_rejection_reason ?? null);
       }
       setLoading(false);
     };
@@ -203,17 +207,19 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* KYC status banner */}
-        {kycStatus !== "verified" && (
-          <div className="mb-6 flex items-center gap-3 rounded-lg border border-warning/30 bg-warning/5 p-3">
-            <UserCheck className="h-5 w-5 text-warning shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-foreground">KYC Verification Pending</p>
-              <p className="text-xs text-muted-foreground">Complete verification to enable withdrawals.</p>
-            </div>
-            <Button size="sm" variant="outline">Verify Now</Button>
-          </div>
-        )}
+            {/* KYC Verification */}
+            {user && (
+              <KycUploadSection
+                userId={user.id}
+                kycStatus={kycStatus}
+                kycDocumentUrl={kycDocumentUrl}
+                kycRejectionReason={kycRejectionReason}
+                onUpdated={(url, status) => {
+                  setKycDocumentUrl(url);
+                  setKycStatus(status);
+                }}
+              />
+            )}
 
         {loading ? (
           <div className="flex justify-center py-16">

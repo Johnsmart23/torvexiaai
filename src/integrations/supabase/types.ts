@@ -127,6 +127,8 @@ export type Database = {
           id: string
           is_admin: boolean
           is_suspended: boolean
+          kyc_document_url: string | null
+          kyc_rejection_reason: string | null
           kyc_status: string
           phone: string | null
           referral_code: string | null
@@ -141,6 +143,8 @@ export type Database = {
           id?: string
           is_admin?: boolean
           is_suspended?: boolean
+          kyc_document_url?: string | null
+          kyc_rejection_reason?: string | null
           kyc_status?: string
           phone?: string | null
           referral_code?: string | null
@@ -155,6 +159,8 @@ export type Database = {
           id?: string
           is_admin?: boolean
           is_suspended?: boolean
+          kyc_document_url?: string | null
+          kyc_rejection_reason?: string | null
           kyc_status?: string
           phone?: string | null
           referral_code?: string | null
@@ -267,6 +273,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_delete_user: {
+        Args: { p_admin_id: string; p_user_id: string }
+        Returns: Json
+      }
       admin_transfer_to_user: {
         Args: {
           p_admin_id: string

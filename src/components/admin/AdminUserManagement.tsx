@@ -24,6 +24,9 @@ import {
   Wallet,
   Send,
   Loader2,
+  Trash2,
+  FileText,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -33,6 +36,8 @@ interface UserProfile {
   full_name: string | null;
   phone: string | null;
   kyc_status: string;
+  kyc_document_url: string | null;
+  kyc_rejection_reason: string | null;
   is_admin: boolean;
   is_suspended: boolean;
   created_at: string;
@@ -57,15 +62,20 @@ const AdminUserManagement = () => {
   const [userWallets, setUserWallets] = useState<any[]>([]);
   const [userTxs, setUserTxs] = useState<any[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
-  // Transfer dialog state
+  // Transfer dialog
   const [transferTarget, setTransferTarget] = useState<UserProfile | null>(null);
   const [transferAmount, setTransferAmount] = useState("");
   const [transferNote, setTransferNote] = useState("");
   const [transferring, setTransferring] = useState(false);
+  // Delete dialog
+  const [deleteTarget, setDeleteTarget] = useState<UserProfile | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  // KYC rejection dialog
+  const [rejectTarget, setRejectTarget] = useState<UserProfile | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
 
-  useEffect(() => {
-    fetchProfiles();
-  }, []);
+  useEffect(() => { fetchProfiles(); }, []);
 
   const fetchProfiles = async () => {
     setLoading(true);
@@ -74,22 +84,38 @@ const AdminUserManagement = () => {
       .select("*")
       .order("created_at", { ascending: false });
     if (error) toast.error("Failed to load users");
-    else setProfiles(data || []);
+    else setProfiles((data as any) || []);
     setLoading(false);
   };
 
-  const updateKyc = async (profileId: string, status: string) => {
+  const updateKyc = async (profileId: string, status: string, reason?: string) => {
+    const updateData: any = { kyc_status: status };
+    if (reason !== undefined) updateData.kyc_rejection_reason = reason;
+    if (status === "approved") updateData.kyc_rejection_reason = null;
+
     const { error } = await supabase
       .from("profiles")
-      .update({ kyc_status: status })
+      .update(updateData)
       .eq("id", profileId);
     if (error) toast.error("Failed to update KYC");
     else {
       toast.success(`KYC ${status}`);
       setProfiles((prev) =>
-        prev.map((p) => (p.id === profileId ? { ...p, kyc_status: status } : p))
+        prev.map((p) => (p.id === profileId ? { ...p, kyc_status: status, kyc_rejection_reason: status === "approved" ? null : (reason ?? p.kyc_rejection_reason) } : p))
       );
     }
+  };
+
+  const handleReject = (p: UserProfile) => {
+    setRejectTarget(p);
+    setRejectionReason("");
+  };
+
+  const confirmReject = async () => {
+    if (!rejectTarget) return;
+    await updateKyc(rejectTarget.id, "rejected", rejectionReason.trim() || undefined);
+    setRejectTarget(null);
+    setRejectionReason("");
   };
 
   const toggleSuspend = async (profileId: string, currentlySuspended: boolean) => {
@@ -101,28 +127,18 @@ const AdminUserManagement = () => {
     else {
       toast.success(currentlySuspended ? "User unsuspended" : "User suspended");
       setProfiles((prev) =>
-        prev.map((p) =>
-          p.id === profileId ? { ...p, is_suspended: !currentlySuspended } : p
-        )
+        prev.map((p) => p.id === profileId ? { ...p, is_suspended: !currentlySuspended } : p)
       );
     }
   };
 
   const toggleExpand = async (userId: string) => {
-    if (expandedUser === userId) {
-      setExpandedUser(null);
-      return;
-    }
+    if (expandedUser === userId) { setExpandedUser(null); return; }
     setExpandedUser(userId);
     setDetailLoading(true);
     const [walletsRes, txRes] = await Promise.all([
       supabase.from("wallets").select("*").eq("user_id", userId),
-      supabase
-        .from("transactions")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(10),
+      supabase.from("transactions").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(10),
     ]);
     setUserWallets(walletsRes.data || []);
     setUserTxs(txRes.data || []);
@@ -132,10 +148,7 @@ const AdminUserManagement = () => {
   const handleTransfer = async () => {
     if (!adminUser || !transferTarget) return;
     const amt = parseFloat(transferAmount);
-    if (isNaN(amt) || amt <= 0) {
-      toast.error("Enter a valid amount");
-      return;
-    }
+    if (isNaN(amt) || amt <= 0) { toast.error("Enter a valid amount"); return; }
     setTransferring(true);
     try {
       const { data, error } = await supabase.rpc("admin_transfer_to_user", {
@@ -144,36 +157,43 @@ const AdminUserManagement = () => {
         p_amount: amt,
         p_note: transferNote.trim(),
       });
-      console.log("Transfer response:", { data, error });
-      if (error) {
-        toast.error(error.message || "Transfer failed");
-      } else if (data && typeof data === "object" && !(data as any).success) {
-        toast.error((data as any).error || "Transfer failed");
-      } else {
+      if (error) { toast.error(error.message || "Transfer failed"); }
+      else if (data && typeof data === "object" && !(data as any).success) { toast.error((data as any).error || "Transfer failed"); }
+      else {
         toast.success(`${fmt(amt)} transferred to ${transferTarget.full_name || "user"}`);
-        setTransferTarget(null);
-        setTransferAmount("");
-        setTransferNote("");
+        setTransferTarget(null); setTransferAmount(""); setTransferNote("");
         if (expandedUser === transferTarget.user_id) {
           toggleExpand(transferTarget.user_id);
           setTimeout(() => toggleExpand(transferTarget.user_id), 100);
         }
       }
-    } catch (err: any) {
-      console.error("Transfer error:", err);
-      toast.error(err?.message || "An unexpected error occurred");
-    }
+    } catch (err: any) { toast.error(err?.message || "An unexpected error occurred"); }
     setTransferring(false);
+  };
+
+  const handleDelete = async () => {
+    if (!adminUser || !deleteTarget) return;
+    setDeleting(true);
+    try {
+      const { data, error } = await supabase.rpc("admin_delete_user" as any, {
+        p_admin_id: adminUser.id,
+        p_user_id: deleteTarget.user_id,
+      });
+      if (error) { toast.error(error.message || "Delete failed"); }
+      else if (data && typeof data === "object" && !(data as any).success) { toast.error((data as any).error || "Delete failed"); }
+      else {
+        toast.success(`Account deleted for ${deleteTarget.full_name || "user"}`);
+        setProfiles((prev) => prev.filter((p) => p.id !== deleteTarget.id));
+        setDeleteTarget(null); setDeleteConfirmText("");
+        if (expandedUser === deleteTarget.user_id) setExpandedUser(null);
+      }
+    } catch (err: any) { toast.error(err?.message || "An unexpected error occurred"); }
+    setDeleting(false);
   };
 
   const filtered = profiles.filter((p) => {
     const q = search.toLowerCase();
-    return (
-      !q ||
-      p.full_name?.toLowerCase().includes(q) ||
-      p.phone?.toLowerCase().includes(q) ||
-      p.user_id.toLowerCase().includes(q)
-    );
+    return !q || p.full_name?.toLowerCase().includes(q) || p.phone?.toLowerCase().includes(q) || p.user_id.toLowerCase().includes(q);
   });
 
   const stats = {
@@ -185,235 +205,226 @@ const AdminUserManagement = () => {
 
   return (
     <>
-    <div>
-      {/* Stats row */}
-      <div className="grid gap-4 sm:grid-cols-4 mb-6">
-        {[
-          { label: "Total Users", value: stats.total },
-          { label: "KYC Pending", value: stats.kycPending },
-          { label: "KYC Approved", value: stats.kycApproved },
-          { label: "Suspended", value: stats.suspended },
-        ].map((s) => (
-          <div key={s.label} className="rounded-xl border border-border bg-card p-4 shadow-card text-center">
-            <p className="text-sm text-muted-foreground">{s.label}</p>
-            <p className="text-2xl font-bold text-foreground">{s.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Search */}
-      <div className="mb-4 flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search users..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
+      <div>
+        {/* Stats */}
+        <div className="grid gap-4 sm:grid-cols-4 mb-6">
+          {[
+            { label: "Total Users", value: stats.total },
+            { label: "KYC Pending", value: stats.kycPending },
+            { label: "KYC Approved", value: stats.kycApproved },
+            { label: "Suspended", value: stats.suspended },
+          ].map((s) => (
+            <div key={s.label} className="rounded-xl border border-border bg-card p-4 shadow-card text-center">
+              <p className="text-sm text-muted-foreground">{s.label}</p>
+              <p className="text-2xl font-bold text-foreground">{s.value}</p>
+            </div>
+          ))}
         </div>
-        <Button variant="outline" size="sm" onClick={fetchProfiles}>
-          Refresh
-        </Button>
-      </div>
 
-      {loading ? (
-        <p className="text-muted-foreground text-sm py-8 text-center">Loading users...</p>
-      ) : (
-        <div className="space-y-3">
-          {filtered.map((p) => (
-            <div key={p.id} className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
-              <div className="flex flex-wrap items-center gap-4 p-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-sm shrink-0">
-                  {p.full_name?.charAt(0)?.toUpperCase() || "?"}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-foreground truncate">
-                    {p.full_name || "No name"}
-                    {p.is_suspended && (
-                      <Badge variant="outline" className="ml-2 bg-destructive/10 text-destructive border-destructive/30 text-xs">
-                        Suspended
-                      </Badge>
-                    )}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">{p.phone || "No phone"}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Joined {new Date(p.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-                <Badge variant="outline" className={kycColors[p.kyc_status] || ""}>
-                  {p.kyc_status}
-                </Badge>
-                <div className="flex gap-1 flex-wrap">
-                  {p.kyc_status === "pending" && (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-success border-success/30 hover:bg-success/10"
-                        onClick={() => updateKyc(p.id, "approved")}
-                      >
-                        <CheckCircle className="h-3 w-3 mr-1" /> Approve
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                        onClick={() => updateKyc(p.id, "rejected")}
-                      >
-                        <XCircle className="h-3 w-3 mr-1" /> Reject
-                      </Button>
-                    </>
-                  )}
-                  {p.kyc_status === "approved" && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                      onClick={() => updateKyc(p.id, "rejected")}
-                    >
-                      <Ban className="h-3 w-3 mr-1" /> Revoke
-                    </Button>
-                  )}
-                  {p.kyc_status === "rejected" && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-success border-success/30 hover:bg-success/10"
-                      onClick={() => updateKyc(p.id, "approved")}
-                    >
-                      <UserCheck className="h-3 w-3 mr-1" /> Re-approve
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => toggleSuspend(p.id, p.is_suspended)}
-                    className={p.is_suspended ? "text-success border-success/30" : "text-destructive border-destructive/30"}
-                  >
-                    {p.is_suspended ? "Unsuspend" : "Suspend"}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => toggleExpand(p.user_id)}
-                  >
-                    {expandedUser === p.user_id ? (
-                      <ChevronUp className="h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
+        {/* Search */}
+        <div className="mb-4 flex items-center gap-2">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search users..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          </div>
+          <Button variant="outline" size="sm" onClick={fetchProfiles}>Refresh</Button>
+        </div>
 
-              {/* Expanded detail */}
-              {expandedUser === p.user_id && (
-                <div className="border-t border-border bg-muted/30 p-4 space-y-4">
-                  {detailLoading ? (
-                    <p className="text-sm text-muted-foreground text-center">Loading...</p>
-                  ) : (
-                    <>
-                      <div>
-                        <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1">
-                          <Wallet className="h-4 w-4" /> Wallets
-                        </h4>
-                        <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
-                          {userWallets.map((w: any) => (
-                            <div key={w.id} className="rounded-lg border border-border bg-card p-3 text-center">
-                              <p className="text-xs text-muted-foreground capitalize">
-                                {w.wallet_type.replace("_", " ")}
-                              </p>
-                              <p className="text-sm font-bold text-foreground">{fmt(Number(w.balance))}</p>
-                            </div>
-                          ))}
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="mt-2 text-primary border-primary/30 hover:bg-primary/10"
-                          onClick={() => setTransferTarget(p)}
-                        >
-                          <Send className="h-3 w-3 mr-1" /> Transfer Funds
+        {loading ? (
+          <p className="text-muted-foreground text-sm py-8 text-center">Loading users...</p>
+        ) : (
+          <div className="space-y-3">
+            {filtered.map((p) => (
+              <div key={p.id} className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
+                <div className="flex flex-wrap items-center gap-4 p-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-sm shrink-0">
+                    {p.full_name?.charAt(0)?.toUpperCase() || "?"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-foreground truncate">
+                      {p.full_name || "No name"}
+                      {p.is_suspended && (
+                        <Badge variant="outline" className="ml-2 bg-destructive/10 text-destructive border-destructive/30 text-xs">Suspended</Badge>
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">{p.phone || "No phone"}</p>
+                    <p className="text-xs text-muted-foreground">Joined {new Date(p.created_at).toLocaleDateString()}</p>
+                  </div>
+
+                  {/* KYC badge + document link */}
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className={kycColors[p.kyc_status] || ""}>{p.kyc_status}</Badge>
+                    {p.kyc_document_url && (
+                      <a href={p.kyc_document_url} target="_blank" rel="noopener noreferrer" title="View KYC Document">
+                        <FileText className="h-4 w-4 text-primary hover:text-primary/80" />
+                      </a>
+                    )}
+                  </div>
+
+                  <div className="flex gap-1 flex-wrap">
+                    {p.kyc_status === "pending" && (
+                      <>
+                        <Button size="sm" variant="outline" className="text-success border-success/30 hover:bg-success/10" onClick={() => updateKyc(p.id, "approved")}>
+                          <CheckCircle className="h-3 w-3 mr-1" /> Approve
                         </Button>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1">
-                          <Clock className="h-4 w-4" /> Recent Transactions
-                        </h4>
-                        {userTxs.length === 0 ? (
-                          <p className="text-xs text-muted-foreground">No transactions</p>
-                        ) : (
-                          <div className="space-y-1">
-                            {userTxs.map((tx: any) => (
-                              <div key={tx.id} className="flex items-center gap-2 text-xs rounded-lg border border-border bg-card p-2">
-                                <span className="capitalize font-medium text-foreground">
-                                  {tx.transaction_type.replace("_", " ")}
-                                </span>
-                                <span className="text-muted-foreground">•</span>
-                                <span className="font-semibold text-foreground">{fmt(Number(tx.amount))}</span>
-                                <span className="text-muted-foreground">•</span>
-                                <Badge variant="outline" className="text-[10px] py-0">
-                                  {tx.status}
-                                </Badge>
-                                <span className="ml-auto text-muted-foreground">
-                                  {new Date(tx.created_at).toLocaleDateString()}
-                                </span>
+                        <Button size="sm" variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => handleReject(p)}>
+                          <XCircle className="h-3 w-3 mr-1" /> Reject
+                        </Button>
+                      </>
+                    )}
+                    {p.kyc_status === "approved" && (
+                      <Button size="sm" variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => handleReject(p)}>
+                        <Ban className="h-3 w-3 mr-1" /> Revoke
+                      </Button>
+                    )}
+                    {p.kyc_status === "rejected" && (
+                      <Button size="sm" variant="outline" className="text-success border-success/30 hover:bg-success/10" onClick={() => updateKyc(p.id, "approved")}>
+                        <UserCheck className="h-3 w-3 mr-1" /> Re-approve
+                      </Button>
+                    )}
+                    <Button size="sm" variant="outline" onClick={() => toggleSuspend(p.id, p.is_suspended)} className={p.is_suspended ? "text-success border-success/30" : "text-destructive border-destructive/30"}>
+                      {p.is_suspended ? "Unsuspend" : "Suspend"}
+                    </Button>
+                    <Button size="sm" variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => { setDeleteTarget(p); setDeleteConfirmText(""); }}>
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => toggleExpand(p.user_id)}>
+                      {expandedUser === p.user_id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Expanded detail */}
+                {expandedUser === p.user_id && (
+                  <div className="border-t border-border bg-muted/30 p-4 space-y-4">
+                    {detailLoading ? (
+                      <p className="text-sm text-muted-foreground text-center">Loading...</p>
+                    ) : (
+                      <>
+                        {/* KYC Document Preview */}
+                        {p.kyc_document_url && (
+                          <div>
+                            <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1">
+                              <FileText className="h-4 w-4" /> KYC Document
+                            </h4>
+                            <div className="rounded-lg border border-border bg-card p-3">
+                              {p.kyc_document_url.match(/\.(jpg|jpeg|png|webp)/i) ? (
+                                <img src={p.kyc_document_url} alt="KYC Document" className="max-h-64 rounded-lg object-contain" />
+                              ) : (
+                                <a href={p.kyc_document_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline">
+                                  <ExternalLink className="h-4 w-4" /> View PDF Document
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        <div>
+                          <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1">
+                            <Wallet className="h-4 w-4" /> Wallets
+                          </h4>
+                          <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                            {userWallets.map((w: any) => (
+                              <div key={w.id} className="rounded-lg border border-border bg-card p-3 text-center">
+                                <p className="text-xs text-muted-foreground capitalize">{w.wallet_type.replace("_", " ")}</p>
+                                <p className="text-sm font-bold text-foreground">{fmt(Number(w.balance))}</p>
                               </div>
                             ))}
                           </div>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-          {filtered.length === 0 && (
-            <p className="text-muted-foreground text-sm py-8 text-center">No users found.</p>
-          )}
-        </div>
-      )}
-    </div>
+                          <Button size="sm" variant="outline" className="mt-2 text-primary border-primary/30 hover:bg-primary/10" onClick={() => setTransferTarget(p)}>
+                            <Send className="h-3 w-3 mr-1" /> Transfer Funds
+                          </Button>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1">
+                            <Clock className="h-4 w-4" /> Recent Transactions
+                          </h4>
+                          {userTxs.length === 0 ? (
+                            <p className="text-xs text-muted-foreground">No transactions</p>
+                          ) : (
+                            <div className="space-y-1">
+                              {userTxs.map((tx: any) => (
+                                <div key={tx.id} className="flex items-center gap-2 text-xs rounded-lg border border-border bg-card p-2">
+                                  <span className="capitalize font-medium text-foreground">{tx.transaction_type.replace("_", " ")}</span>
+                                  <span className="text-muted-foreground">•</span>
+                                  <span className="font-semibold text-foreground">{fmt(Number(tx.amount))}</span>
+                                  <span className="text-muted-foreground">•</span>
+                                  <Badge variant="outline" className="text-[10px] py-0">{tx.status}</Badge>
+                                  <span className="ml-auto text-muted-foreground">{new Date(tx.created_at).toLocaleDateString()}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+            {filtered.length === 0 && <p className="text-muted-foreground text-sm py-8 text-center">No users found.</p>}
+          </div>
+        )}
+      </div>
+
       {/* Transfer Dialog */}
       <Dialog open={!!transferTarget} onOpenChange={(o) => { if (!o) { setTransferTarget(null); setTransferAmount(""); setTransferNote(""); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Send className="h-5 w-5 text-primary" /> Transfer Funds to User
-            </DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><Send className="h-5 w-5 text-primary" /> Transfer Funds to User</DialogTitle>
+            <DialogDescription>Send funds from company wallet to {transferTarget?.full_name || "this user"}'s deposit wallet.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div><Label>Amount (USD)</Label><Input type="number" min="1" placeholder="e.g. 500" value={transferAmount} onChange={(e) => setTransferAmount(e.target.value)} /></div>
+            <div><Label>Note (optional)</Label><Input placeholder="e.g. Deposit confirmation" value={transferNote} onChange={(e) => setTransferNote(e.target.value)} /></div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => { setTransferTarget(null); setTransferAmount(""); setTransferNote(""); }}>Cancel</Button>
+              <Button className="flex-1" onClick={handleTransfer} disabled={transferring}>
+                {transferring ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null} Send Funds
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={(o) => { if (!o) { setDeleteTarget(null); setDeleteConfirmText(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive"><Trash2 className="h-5 w-5" /> Delete User Account</DialogTitle>
             <DialogDescription>
-              Send funds from company wallet to {transferTarget?.full_name || "this user"}'s deposit wallet.
+              This will permanently delete <strong>{deleteTarget?.full_name || "this user"}</strong>'s account, including all wallets, transactions, and investments. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Amount (USD)</Label>
-              <Input
-                type="number"
-                min="1"
-                placeholder="e.g. 500"
-                value={transferAmount}
-                onChange={(e) => setTransferAmount(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label>Note (optional)</Label>
-              <Input
-                placeholder="e.g. Deposit confirmation"
-                value={transferNote}
-                onChange={(e) => setTransferNote(e.target.value)}
-              />
+              <Label>Type <strong>DELETE</strong> to confirm</Label>
+              <Input value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)} placeholder="DELETE" />
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => { setTransferTarget(null); setTransferAmount(""); setTransferNote(""); }}>
-                Cancel
+              <Button variant="outline" className="flex-1" onClick={() => { setDeleteTarget(null); setDeleteConfirmText(""); }}>Cancel</Button>
+              <Button variant="destructive" className="flex-1" onClick={handleDelete} disabled={deleting || deleteConfirmText !== "DELETE"}>
+                {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null} Delete Account
               </Button>
-              <Button className="flex-1" onClick={handleTransfer} disabled={transferring}>
-                {transferring ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
-                Send Funds
-              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* KYC Rejection Dialog */}
+      <Dialog open={!!rejectTarget} onOpenChange={(o) => { if (!o) { setRejectTarget(null); setRejectionReason(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive"><XCircle className="h-5 w-5" /> Reject KYC</DialogTitle>
+            <DialogDescription>Provide a reason for rejecting {rejectTarget?.full_name || "this user"}'s KYC verification.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Rejection Reason (optional)</Label>
+              <Input value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="e.g. Document is blurry or expired" />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => { setRejectTarget(null); setRejectionReason(""); }}>Cancel</Button>
+              <Button variant="destructive" className="flex-1" onClick={confirmReject}>Reject KYC</Button>
             </div>
           </div>
         </DialogContent>
