@@ -156,6 +156,41 @@ const Dashboard = () => {
           </div>
         )}
 
+        {/* Daily Interest Summary */}
+        {investments.length > 0 && (() => {
+          const totalDailyProfit = investments.reduce((sum: number, inv: any) => sum + (Number(inv.amount) * Number(inv.daily_rate) / 100), 0);
+          const totalInvested = investments.reduce((sum: number, inv: any) => sum + Number(inv.amount), 0);
+          const totalEarned = investments.reduce((sum: number, inv: any) => sum + Number(inv.total_profit_earned), 0);
+          return (
+            <div className="mb-4 grid gap-4 sm:grid-cols-3">
+              <div className="rounded-xl border border-success/30 bg-success/5 p-5 shadow-card">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Daily Interest</span>
+                  <TrendingUp className="h-5 w-5 text-success" />
+                </div>
+                <p className="mt-2 text-2xl font-bold text-success">{fmt(totalDailyProfit)}</p>
+                <p className="text-xs text-muted-foreground">Earned every day</p>
+              </div>
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-5 shadow-card">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Total Invested</span>
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                </div>
+                <p className="mt-2 text-2xl font-bold text-foreground">{fmt(totalInvested)}</p>
+                <p className="text-xs text-muted-foreground">{investments.length} active plan{investments.length > 1 ? "s" : ""}</p>
+              </div>
+              <div className="rounded-xl border border-accent/30 bg-accent/5 p-5 shadow-card">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Total Earned</span>
+                  <Wallet className="h-5 w-5 text-accent" />
+                </div>
+                <p className="mt-2 text-2xl font-bold text-foreground">{fmt(totalEarned)}</p>
+                <p className="text-xs text-muted-foreground">Accumulated profit</p>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Wallet cards */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {sortedWallets.map((w: any) => {
