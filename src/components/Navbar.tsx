@@ -98,6 +98,7 @@ const Navbar = () => {
                   </Link>
                 </Button>
               )}
+              <NotificationBell />
               <Link
                 to="/profile"
                 className="flex items-center gap-2 rounded-full border border-border px-2 py-1 hover:bg-secondary transition-colors"
