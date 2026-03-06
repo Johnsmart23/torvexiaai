@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import InvestDialog from "@/components/InvestDialog";
 import DepositDialog from "@/components/DepositDialog";
 import WithdrawDialog from "@/components/WithdrawDialog";
+import NotificationBell from "@/components/NotificationBell";
 import {
   Shield,
   Wallet,
