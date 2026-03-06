@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Shield, LayoutDashboard, LogOut, User, ShieldCheck } from "lucide-react";
+import NotificationBell from "@/components/NotificationBell";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/use-profile";
@@ -97,6 +98,7 @@ const Navbar = () => {
                   </Link>
                 </Button>
               )}
+              <NotificationBell />
               <Link
                 to="/profile"
                 className="flex items-center gap-2 rounded-full border border-border px-2 py-1 hover:bg-secondary transition-colors"

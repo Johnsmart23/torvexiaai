@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import InvestDialog from "@/components/InvestDialog";
 import DepositDialog from "@/components/DepositDialog";
 import WithdrawDialog from "@/components/WithdrawDialog";
+import NotificationBell from "@/components/NotificationBell";
 import {
   Shield,
   Wallet,
@@ -128,6 +129,7 @@ const Dashboard = () => {
           </Link>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground hidden sm:inline">{user?.email}</span>
+            <NotificationBell />
             <Button variant="ghost" size="sm" onClick={async () => { await signOut(); navigate("/"); }}>
               <LogOut className="h-4 w-4" />
             </Button>
