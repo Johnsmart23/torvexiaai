@@ -169,6 +169,9 @@ const Index = () => (
       </div>
     </section>
 
+    {/* Testimonials */}
+    <Testimonials />
+
     {/* Security banner */}
     <section className="container mx-auto px-4 py-20">
       <AnimatedSection>
