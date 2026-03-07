@@ -243,10 +243,11 @@ const Dashboard = () => {
                 </Button>
               </div>
             ) : (
-              investments.map((inv: any) => {
+            investments.map((inv: any) => {
                 const daysLeft = Math.max(0, inv.duration_days - inv.days_completed);
                 const progress = Math.round((inv.days_completed / inv.duration_days) * 100);
                 const dailyProfit = Number(inv.amount) * Number(inv.daily_rate) / 100;
+                const daysCompleted = Number(inv.days_completed);
                 return (
                   <div key={inv.id} className="rounded-xl border border-border bg-card p-5 shadow-card">
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -268,9 +269,27 @@ const Dashboard = () => {
                       />
                     </div>
                     <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-                      <span>Earned: {fmt(Number(inv.total_profit_earned))}</span>
+                      <span>Total Earned: {fmt(Number(inv.total_profit_earned))}</span>
                       <span>{progress}% complete</span>
                     </div>
+
+                    {/* Daily Interest Breakdown */}
+                    {daysCompleted > 0 && (
+                      <div className="mt-4 border-t border-border pt-3">
+                        <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Daily Interest Log</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 max-h-40 overflow-y-auto">
+                          {Array.from({ length: daysCompleted }, (_, i) => (
+                            <div
+                              key={i}
+                              className="flex items-center justify-between rounded-md bg-success/5 border border-success/20 px-2.5 py-1.5 text-xs"
+                            >
+                              <span className="text-muted-foreground font-medium">Day {i + 1}</span>
+                              <span className="text-success font-semibold">+{fmt(dailyProfit)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })
