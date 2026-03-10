@@ -285,8 +285,13 @@ const Dashboard = () => {
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 max-h-60 overflow-y-auto pr-1">
                         {Array.from({ length: inv.duration_days }, (_, i) => {
+                          const startDate = new Date(inv.started_at);
+                          const dayDate = new Date(startDate);
+                          dayDate.setDate(startDate.getDate() + i);
                           const isPaid = i < daysCompleted;
-                          const isToday = i === daysCompleted;
+                          const isToday = i === daysCompleted && dayDate.toDateString() === new Date().toDateString();
+                          const isFuture = i >= daysCompleted;
+                          const dateStr = dayDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
                           return (
                             <div
                               key={i}
@@ -298,9 +303,12 @@ const Dashboard = () => {
                                   : "bg-muted/30 border-border"
                               }`}
                             >
-                              <span className={`font-medium ${isPaid ? "text-success" : isToday ? "text-primary" : "text-muted-foreground"}`}>
-                                Day {i + 1}
-                              </span>
+                              <div className="flex flex-col">
+                                <span className={`font-medium ${isPaid ? "text-success" : isToday ? "text-primary" : "text-muted-foreground"}`}>
+                                  Day {i + 1}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground">{dateStr}</span>
+                              </div>
                               <div className="flex items-center gap-1">
                                 {isPaid && <CheckCircle className="h-3 w-3 text-success" />}
                                 {isToday && <Clock className="h-3 w-3 text-primary" />}
