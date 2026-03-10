@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import InvestDialog from "@/components/InvestDialog";
+import InvestmentTracking from "@/components/dashboard/InvestmentTracking";
 import DepositDialog from "@/components/DepositDialog";
 import WithdrawDialog from "@/components/WithdrawDialog";
 import NotificationBell from "@/components/NotificationBell";
