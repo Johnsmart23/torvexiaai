@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import InvestDialog from "@/components/InvestDialog";
+import InvestmentTracking from "@/components/dashboard/InvestmentTracking";
 import DepositDialog from "@/components/DepositDialog";
 import WithdrawDialog from "@/components/WithdrawDialog";
 import NotificationBell from "@/components/NotificationBell";
@@ -230,100 +231,12 @@ const Dashboard = () => {
         </div>
 
         {activeTab === "overview" ? (
-          <div className="mt-6 space-y-4">
-            {investments.length === 0 ? (
-              <div className="rounded-xl border border-border bg-card p-8 shadow-card text-center">
-                <BarChart3 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h2 className="text-lg font-semibold text-foreground">No Active Investments</h2>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Deposit funds and invest in a plan to start earning daily profits.
-                </p>
-                <Button className="mt-4" onClick={() => setInvestOpen(true)}>
-                  Invest Now
-                </Button>
+          <div className="mt-6">
+            <InvestmentTracking investments={investments} fmt={fmt} />
+            {investments.length === 0 && (
+              <div className="mt-4 text-center">
+                <Button onClick={() => setInvestOpen(true)}>Invest Now</Button>
               </div>
-            ) : (
-            investments.map((inv: any) => {
-                const daysLeft = Math.max(0, inv.duration_days - inv.days_completed);
-                const progress = Math.round((inv.days_completed / inv.duration_days) * 100);
-                const dailyProfit = Number(inv.amount) * Number(inv.daily_rate) / 100;
-                const daysCompleted = Number(inv.days_completed);
-                return (
-                  <div key={inv.id} className="rounded-xl border border-border bg-card p-5 shadow-card">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <h3 className="font-semibold text-foreground">{inv.plan_name} Plan</h3>
-                        <p className="text-sm text-muted-foreground">Invested: {fmt(Number(inv.amount))}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium text-success">+{fmt(dailyProfit)}/day</p>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Clock className="h-3 w-3" /> {daysLeft} days left
-                        </p>
-                      </div>
-                    </div>
-                    <div className="mt-3 h-2 w-full rounded-full bg-secondary">
-                      <div
-                        className="h-2 rounded-full bg-primary transition-all"
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                    <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-                      <span>Total Earned: {fmt(Number(inv.total_profit_earned))}</span>
-                      <span>{progress}% complete</span>
-                    </div>
-
-                    {/* Full 30-Day Interest Schedule */}
-                    <div className="mt-4 border-t border-border pt-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                          Interest Schedule (Day 1 – Day {inv.duration_days})
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Total Expected: <span className="text-success font-semibold">{fmt(dailyProfit * inv.duration_days)}</span>
-                        </p>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 max-h-60 overflow-y-auto pr-1">
-                        {Array.from({ length: inv.duration_days }, (_, i) => {
-                          const startDate = new Date(inv.started_at);
-                          const dayDate = new Date(startDate);
-                          dayDate.setDate(startDate.getDate() + i);
-                          const isPaid = i < daysCompleted;
-                          const isToday = i === daysCompleted && dayDate.toDateString() === new Date().toDateString();
-                          const isFuture = i >= daysCompleted;
-                          const dateStr = dayDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-                          return (
-                            <div
-                              key={i}
-                              className={`flex items-center justify-between rounded-md px-2.5 py-1.5 text-xs border transition-colors ${
-                                isPaid
-                                  ? "bg-success/10 border-success/30"
-                                  : isToday
-                                  ? "bg-primary/10 border-primary/30 ring-1 ring-primary/20"
-                                  : "bg-muted/30 border-border"
-                              }`}
-                            >
-                              <div className="flex flex-col">
-                                <span className={`font-medium ${isPaid ? "text-success" : isToday ? "text-primary" : "text-muted-foreground"}`}>
-                                  Day {i + 1}
-                                </span>
-                                <span className="text-[10px] text-muted-foreground">{dateStr}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                {isPaid && <CheckCircle className="h-3 w-3 text-success" />}
-                                {isToday && <Clock className="h-3 w-3 text-primary" />}
-                                <span className={`font-semibold ${isPaid ? "text-success" : isToday ? "text-primary" : "text-muted-foreground/60"}`}>
-                                  {isPaid ? "+" : ""}{fmt(dailyProfit)}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
             )}
           </div>
         ) : (
