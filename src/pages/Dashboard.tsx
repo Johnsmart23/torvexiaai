@@ -273,23 +273,46 @@ const Dashboard = () => {
                       <span>{progress}% complete</span>
                     </div>
 
-                    {/* Daily Interest Breakdown */}
-                    {daysCompleted > 0 && (
-                      <div className="mt-4 border-t border-border pt-3">
-                        <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Daily Interest Log</p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 max-h-40 overflow-y-auto">
-                          {Array.from({ length: daysCompleted }, (_, i) => (
+                    {/* Full 30-Day Interest Schedule */}
+                    <div className="mt-4 border-t border-border pt-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          Interest Schedule (Day 1 – Day {inv.duration_days})
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Total Expected: <span className="text-success font-semibold">{fmt(dailyProfit * inv.duration_days)}</span>
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 max-h-60 overflow-y-auto pr-1">
+                        {Array.from({ length: inv.duration_days }, (_, i) => {
+                          const isPaid = i < daysCompleted;
+                          const isToday = i === daysCompleted;
+                          return (
                             <div
                               key={i}
-                              className="flex items-center justify-between rounded-md bg-success/5 border border-success/20 px-2.5 py-1.5 text-xs"
+                              className={`flex items-center justify-between rounded-md px-2.5 py-1.5 text-xs border transition-colors ${
+                                isPaid
+                                  ? "bg-success/10 border-success/30"
+                                  : isToday
+                                  ? "bg-primary/10 border-primary/30 ring-1 ring-primary/20"
+                                  : "bg-muted/30 border-border"
+                              }`}
                             >
-                              <span className="text-muted-foreground font-medium">Day {i + 1}</span>
-                              <span className="text-success font-semibold">+{fmt(dailyProfit)}</span>
+                              <span className={`font-medium ${isPaid ? "text-success" : isToday ? "text-primary" : "text-muted-foreground"}`}>
+                                Day {i + 1}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                {isPaid && <CheckCircle className="h-3 w-3 text-success" />}
+                                {isToday && <Clock className="h-3 w-3 text-primary" />}
+                                <span className={`font-semibold ${isPaid ? "text-success" : isToday ? "text-primary" : "text-muted-foreground/60"}`}>
+                                  {isPaid ? "+" : ""}{fmt(dailyProfit)}
+                                </span>
+                              </div>
                             </div>
-                          ))}
-                        </div>
+                          );
+                        })}
                       </div>
-                    )}
+                    </div>
                   </div>
                 );
               })
