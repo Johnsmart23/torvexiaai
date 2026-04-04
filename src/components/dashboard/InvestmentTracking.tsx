@@ -70,6 +70,9 @@ const InvestmentTracking = ({ investments, fmt }: InvestmentTrackingProps) => {
         </div>
       </div>
 
+      {/* Profit Growth Chart */}
+      <ProfitGrowthChart investments={investments} fmt={fmt} />
+
       {/* Investment Cards */}
       {investments.map((inv) => {
         const daysLeft = Math.max(0, inv.duration_days - inv.days_completed);
