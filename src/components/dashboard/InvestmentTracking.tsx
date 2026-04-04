@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import ProfitGrowthChart from "./ProfitGrowthChart";
 
 interface Investment {
   id: string;
@@ -68,6 +69,9 @@ const InvestmentTracking = ({ investments, fmt }: InvestmentTrackingProps) => {
           </p>
         </div>
       </div>
+
+      {/* Profit Growth Chart */}
+      <ProfitGrowthChart investments={investments} fmt={fmt} />
 
       {/* Investment Cards */}
       {investments.map((inv) => {
