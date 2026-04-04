@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import ProfitGrowthChart from "./ProfitGrowthChart";
 
 interface Investment {
   id: string;
