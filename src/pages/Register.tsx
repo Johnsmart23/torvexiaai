@@ -68,7 +68,7 @@ const Register = () => {
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
                 <Shield className="h-5 w-5 text-primary-foreground" />
               </div>
-              <span className="text-2xl font-bold text-foreground">VaultEdge</span>
+              <span className="text-2xl font-bold text-foreground">InvestSphere</span>
             </Link>
           </div>
           <div className="rounded-xl border border-border bg-card p-6 shadow-elevated text-center">
@@ -125,7 +125,7 @@ const Register = () => {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
               <Shield className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-2xl font-bold text-foreground">VaultEdge</span>
+            <span className="text-2xl font-bold text-foreground">InvestSphere</span>
           </Link>
         </div>
         <div className="rounded-xl border border-border bg-card p-6 shadow-elevated">

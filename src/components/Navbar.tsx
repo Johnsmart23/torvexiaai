@@ -56,7 +56,7 @@ const Navbar = () => {
           >
             <Shield className="h-5 w-5 text-primary-foreground" />
           </motion.div>
-          <span className="text-xl font-bold text-foreground">VaultEdge</span>
+          <span className="text-xl font-bold text-foreground">InvestSphere</span>
         </Link>
 
         {/* Desktop nav */}

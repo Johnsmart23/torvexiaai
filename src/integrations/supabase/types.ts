@@ -307,6 +307,15 @@ export type Database = {
         Args: { p_admin_id: string; p_user_id: string }
         Returns: Json
       }
+      admin_transfer_deposit_to_interest: {
+        Args: {
+          p_admin_id: string
+          p_amount: number
+          p_note?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       admin_transfer_to_user: {
         Args: {
           p_admin_id: string

@@ -27,6 +27,8 @@ import {
   Trash2,
   FileText,
   ExternalLink,
+  ShieldCheck,
+  ShieldOff,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -74,6 +76,11 @@ const AdminUserManagement = () => {
   // KYC rejection dialog
   const [rejectTarget, setRejectTarget] = useState<UserProfile | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
+  // Deposit to Interest transfer
+  const [interestTransferTarget, setInterestTransferTarget] = useState<UserProfile | null>(null);
+  const [interestTransferAmount, setInterestTransferAmount] = useState("");
+  const [interestTransferNote, setInterestTransferNote] = useState("");
+  const [interestTransferring, setInterestTransferring] = useState(false);
 
   useEffect(() => { fetchProfiles(); }, []);
 
@@ -191,6 +198,64 @@ const AdminUserManagement = () => {
     setDeleting(false);
   };
 
+  const toggleAdmin = async (profile: UserProfile) => {
+    if (!adminUser) return;
+    const isCurrentlyAdmin = profile.is_admin;
+    try {
+      if (isCurrentlyAdmin) {
+        // Remove admin role
+        const { error } = await supabase
+          .from("user_roles")
+          .delete()
+          .eq("user_id", profile.user_id)
+          .eq("role", "admin");
+        if (error) throw error;
+        // Update profiles table
+        await supabase.from("profiles").update({ is_admin: false }).eq("id", profile.id);
+        toast.success(`${profile.full_name || "User"} removed as admin`);
+        setProfiles((prev) => prev.map((p) => p.id === profile.id ? { ...p, is_admin: false } : p));
+      } else {
+        // Add admin role
+        const { error } = await supabase
+          .from("user_roles")
+          .insert({ user_id: profile.user_id, role: "admin" });
+        if (error) throw error;
+        // Update profiles table
+        await supabase.from("profiles").update({ is_admin: true }).eq("id", profile.id);
+        toast.success(`${profile.full_name || "User"} is now an admin`);
+        setProfiles((prev) => prev.map((p) => p.id === profile.id ? { ...p, is_admin: true } : p));
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update admin status");
+    }
+  };
+
+  const handleInterestTransfer = async () => {
+    if (!adminUser || !interestTransferTarget) return;
+    const amt = parseFloat(interestTransferAmount);
+    if (isNaN(amt) || amt <= 0) { toast.error("Enter a valid amount"); return; }
+    setInterestTransferring(true);
+    try {
+      const { data, error } = await supabase.rpc("admin_transfer_deposit_to_interest" as any, {
+        p_admin_id: adminUser.id,
+        p_user_id: interestTransferTarget.user_id,
+        p_amount: amt,
+        p_note: interestTransferNote.trim(),
+      });
+      if (error) { toast.error(error.message || "Transfer failed"); }
+      else if (data && typeof data === "object" && !(data as any).success) { toast.error((data as any).error || "Transfer failed"); }
+      else {
+        toast.success(`${fmt(amt)} transferred from Deposit to Interest wallet`);
+        setInterestTransferTarget(null); setInterestTransferAmount(""); setInterestTransferNote("");
+        if (expandedUser === interestTransferTarget.user_id) {
+          toggleExpand(interestTransferTarget.user_id);
+          setTimeout(() => toggleExpand(interestTransferTarget.user_id), 100);
+        }
+      }
+    } catch (err: any) { toast.error(err?.message || "An unexpected error occurred"); }
+    setInterestTransferring(false);
+  };
+
   const filtered = profiles.filter((p) => {
     const q = search.toLowerCase();
     return !q || p.full_name?.toLowerCase().includes(q) || p.phone?.toLowerCase().includes(q) || p.user_id.toLowerCase().includes(q);
@@ -243,6 +308,9 @@ const AdminUserManagement = () => {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-foreground truncate">
                       {p.full_name || "No name"}
+                      {p.is_admin && (
+                        <Badge variant="outline" className="ml-2 bg-primary/10 text-primary border-primary/30 text-xs">Admin</Badge>
+                      )}
                       {p.is_suspended && (
                         <Badge variant="outline" className="ml-2 bg-destructive/10 text-destructive border-destructive/30 text-xs">Suspended</Badge>
                       )}
@@ -284,6 +352,9 @@ const AdminUserManagement = () => {
                     )}
                     <Button size="sm" variant="outline" onClick={() => toggleSuspend(p.id, p.is_suspended)} className={p.is_suspended ? "text-success border-success/30" : "text-destructive border-destructive/30"}>
                       {p.is_suspended ? "Unsuspend" : "Suspend"}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => toggleAdmin(p)} className={p.is_admin ? "text-warning border-warning/30 hover:bg-warning/10" : "text-primary border-primary/30 hover:bg-primary/10"}>
+                      {p.is_admin ? <><ShieldOff className="h-3 w-3 mr-1" /> Remove Admin</> : <><ShieldCheck className="h-3 w-3 mr-1" /> Make Admin</>}
                     </Button>
                     <Button size="sm" variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => { setDeleteTarget(p); setDeleteConfirmText(""); }}>
                       <Trash2 className="h-3 w-3" />
@@ -330,9 +401,14 @@ const AdminUserManagement = () => {
                               </div>
                             ))}
                           </div>
-                          <Button size="sm" variant="outline" className="mt-2 text-primary border-primary/30 hover:bg-primary/10" onClick={() => setTransferTarget(p)}>
-                            <Send className="h-3 w-3 mr-1" /> Transfer Funds
-                          </Button>
+                          <div className="flex gap-2 mt-2">
+                            <Button size="sm" variant="outline" className="text-primary border-primary/30 hover:bg-primary/10" onClick={() => setTransferTarget(p)}>
+                              <Send className="h-3 w-3 mr-1" /> Transfer Funds
+                            </Button>
+                            <Button size="sm" variant="outline" className="text-accent border-accent/30 hover:bg-accent/10" onClick={() => setInterestTransferTarget(p)}>
+                              <Wallet className="h-3 w-3 mr-1" /> Deposit → Interest
+                            </Button>
+                          </div>
                         </div>
                         <div>
                           <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1">
@@ -425,6 +501,32 @@ const AdminUserManagement = () => {
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => { setRejectTarget(null); setRejectionReason(""); }}>Cancel</Button>
               <Button variant="destructive" className="flex-1" onClick={confirmReject}>Reject KYC</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Deposit to Interest Transfer Dialog */}
+      <Dialog open={!!interestTransferTarget} onOpenChange={(o) => { if (!o) { setInterestTransferTarget(null); setInterestTransferAmount(""); setInterestTransferNote(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Wallet className="h-5 w-5 text-accent" /> Transfer Deposit → Interest</DialogTitle>
+            <DialogDescription>Move funds from {interestTransferTarget?.full_name || "this user"}'s deposit wallet to their interest (profit) wallet.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <p className="text-xs text-muted-foreground">User's Deposit Balance</p>
+              <p className="text-lg font-bold text-foreground">
+                {fmt(Number(userWallets.find((w: any) => w.wallet_type === "deposit")?.balance || 0))}
+              </p>
+            </div>
+            <div><Label>Amount (USD)</Label><Input type="number" min="1" placeholder="e.g. 100" value={interestTransferAmount} onChange={(e) => setInterestTransferAmount(e.target.value)} /></div>
+            <div><Label>Note (optional)</Label><Input placeholder="e.g. Interest allocation" value={interestTransferNote} onChange={(e) => setInterestTransferNote(e.target.value)} /></div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => { setInterestTransferTarget(null); setInterestTransferAmount(""); setInterestTransferNote(""); }}>Cancel</Button>
+              <Button className="flex-1" onClick={handleInterestTransfer} disabled={interestTransferring}>
+                {interestTransferring ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null} Transfer
+              </Button>
             </div>
           </div>
         </DialogContent>

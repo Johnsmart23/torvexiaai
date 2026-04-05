@@ -17,7 +17,7 @@ import {
   ArrowLeft,
   Camera,
 } from "lucide-react";
-import KycUploadSection from "@/components/profile/KycUploadSection";
+
 
 const Profile = () => {
   const { user, signOut } = useAuth();
@@ -30,8 +30,6 @@ const Profile = () => {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [kycStatus, setKycStatus] = useState("pending");
-  const [kycDocumentUrl, setKycDocumentUrl] = useState<string | null>(null);
-  const [kycRejectionReason, setKycRejectionReason] = useState<string | null>(null);
   const [referralCode, setReferralCode] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
@@ -40,7 +38,7 @@ const Profile = () => {
       if (!user) return;
       const { data, error } = await supabase
         .from("profiles")
-        .select("full_name, phone, kyc_status, referral_code, avatar_url, kyc_document_url, kyc_rejection_reason")
+        .select("full_name, phone, kyc_status, referral_code, avatar_url")
         .eq("user_id", user.id)
         .single();
       if (!error && data) {
@@ -49,8 +47,6 @@ const Profile = () => {
         setKycStatus(data.kyc_status ?? "pending");
         setReferralCode(data.referral_code ?? "");
         setAvatarUrl(data.avatar_url ?? null);
-        setKycDocumentUrl((data as any).kyc_document_url ?? null);
-        setKycRejectionReason((data as any).kyc_rejection_reason ?? null);
       }
       setLoading(false);
     };
@@ -146,7 +142,7 @@ const Profile = () => {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <Shield className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="font-bold text-foreground">VaultEdge</span>
+            <span className="font-bold text-foreground">InvestSphere</span>
           </Link>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" asChild>
@@ -207,19 +203,6 @@ const Profile = () => {
           </div>
         </div>
 
-            {/* KYC Verification */}
-            {user && (
-              <KycUploadSection
-                userId={user.id}
-                kycStatus={kycStatus}
-                kycDocumentUrl={kycDocumentUrl}
-                kycRejectionReason={kycRejectionReason}
-                onUpdated={(url, status) => {
-                  setKycDocumentUrl(url);
-                  setKycStatus(status);
-                }}
-              />
-            )}
 
         {loading ? (
           <div className="flex justify-center py-16">

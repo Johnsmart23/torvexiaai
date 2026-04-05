@@ -3,14 +3,14 @@ import { Star } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 
 const testimonials = [
-  { name: "Sarah M.", role: "Early Investor", text: "VaultEdge transformed my savings strategy. Watching daily profits roll in gives me real confidence in my financial future.", rating: 5 },
+  { name: "Sarah M.", role: "Early Investor", text: "InvestSphere transformed my savings strategy. Watching daily profits roll in gives me real confidence in my financial future.", rating: 5 },
   { name: "James K.", role: "Business Owner", text: "The transparency is unmatched. I can see every transaction, every profit accrual. No hidden fees, no surprises.", rating: 5 },
   { name: "Amara O.", role: "Freelancer", text: "I started with the Bronze plan and upgraded to Gold within 2 months. The returns speak for themselves.", rating: 5 },
-  { name: "David L.", role: "Retiree", text: "After years of low bank interest rates, VaultEdge finally gives me a meaningful return on my capital.", rating: 4 },
+  { name: "David L.", role: "Retiree", text: "After years of low bank interest rates, InvestSphere finally gives me a meaningful return on my capital.", rating: 4 },
   { name: "Priya S.", role: "Software Engineer", text: "KYC verification was quick and seamless. The security measures gave me peace of mind from day one.", rating: 5 },
   { name: "Michael R.", role: "Entrepreneur", text: "The referral program is generous. I've earned significant bonuses just by sharing with friends and family.", rating: 5 },
   { name: "Linda W.", role: "Teacher", text: "Simple, intuitive dashboard. I check my daily interest every morning with my coffee. It's become my favorite routine.", rating: 4 },
-  { name: "Hassan A.", role: "Trader", text: "I've used many platforms. VaultEdge stands out for its reliability and consistent daily payouts.", rating: 5 },
+  { name: "Hassan A.", role: "Trader", text: "I've used many platforms. InvestSphere stands out for its reliability and consistent daily payouts.", rating: 5 },
   { name: "Emily C.", role: "Nurse", text: "Customer support is exceptional. Every question I had was answered within hours. Truly professional team.", rating: 5 },
   { name: "Robert T.", role: "Accountant", text: "The financial reports and transaction history make my tax season much easier. Everything is well-documented.", rating: 4 },
 ];
