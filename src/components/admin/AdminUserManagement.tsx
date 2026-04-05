@@ -277,6 +277,9 @@ const AdminUserManagement = () => {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-foreground truncate">
                       {p.full_name || "No name"}
+                      {p.is_admin && (
+                        <Badge variant="outline" className="ml-2 bg-primary/10 text-primary border-primary/30 text-xs">Admin</Badge>
+                      )}
                       {p.is_suspended && (
                         <Badge variant="outline" className="ml-2 bg-destructive/10 text-destructive border-destructive/30 text-xs">Suspended</Badge>
                       )}
