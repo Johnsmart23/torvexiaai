@@ -35,7 +35,7 @@ const Contact = () => {
               <Mail className="h-5 w-5 text-primary mt-0.5" />
               <div>
                 <h3 className="font-semibold text-foreground text-sm">Email Support</h3>
-                <p className="text-sm text-muted-foreground">support@vaultedge.com</p>
+                <p className="text-sm text-muted-foreground">support@investsphere.com</p>
               </div>
             </div>
             <div className="rounded-xl border border-border bg-card p-5 shadow-card flex items-start gap-3">

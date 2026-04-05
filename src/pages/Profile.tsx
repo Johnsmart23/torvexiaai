@@ -17,7 +17,7 @@ import {
   ArrowLeft,
   Camera,
 } from "lucide-react";
-import KycUploadSection from "@/components/profile/KycUploadSection";
+
 
 const Profile = () => {
   const { user, signOut } = useAuth();
