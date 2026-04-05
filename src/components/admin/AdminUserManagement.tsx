@@ -401,9 +401,14 @@ const AdminUserManagement = () => {
                               </div>
                             ))}
                           </div>
-                          <Button size="sm" variant="outline" className="mt-2 text-primary border-primary/30 hover:bg-primary/10" onClick={() => setTransferTarget(p)}>
-                            <Send className="h-3 w-3 mr-1" /> Transfer Funds
-                          </Button>
+                          <div className="flex gap-2 mt-2">
+                            <Button size="sm" variant="outline" className="text-primary border-primary/30 hover:bg-primary/10" onClick={() => setTransferTarget(p)}>
+                              <Send className="h-3 w-3 mr-1" /> Transfer Funds
+                            </Button>
+                            <Button size="sm" variant="outline" className="text-accent border-accent/30 hover:bg-accent/10" onClick={() => setInterestTransferTarget(p)}>
+                              <Wallet className="h-3 w-3 mr-1" /> Deposit → Interest
+                            </Button>
+                          </div>
                         </div>
                         <div>
                           <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1">
