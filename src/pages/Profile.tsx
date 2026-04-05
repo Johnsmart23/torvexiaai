@@ -207,19 +207,6 @@ const Profile = () => {
           </div>
         </div>
 
-            {/* KYC Verification */}
-            {user && (
-              <KycUploadSection
-                userId={user.id}
-                kycStatus={kycStatus}
-                kycDocumentUrl={kycDocumentUrl}
-                kycRejectionReason={kycRejectionReason}
-                onUpdated={(url, status) => {
-                  setKycDocumentUrl(url);
-                  setKycStatus(status);
-                }}
-              />
-            )}
 
         {loading ? (
           <div className="flex justify-center py-16">
