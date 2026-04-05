@@ -230,7 +230,33 @@ const AdminUserManagement = () => {
     }
   };
 
-  const filtered = profiles.filter((p) => {
+  const handleInterestTransfer = async () => {
+    if (!adminUser || !interestTransferTarget) return;
+    const amt = parseFloat(interestTransferAmount);
+    if (isNaN(amt) || amt <= 0) { toast.error("Enter a valid amount"); return; }
+    setInterestTransferring(true);
+    try {
+      const { data, error } = await supabase.rpc("admin_transfer_deposit_to_interest" as any, {
+        p_admin_id: adminUser.id,
+        p_user_id: interestTransferTarget.user_id,
+        p_amount: amt,
+        p_note: interestTransferNote.trim(),
+      });
+      if (error) { toast.error(error.message || "Transfer failed"); }
+      else if (data && typeof data === "object" && !(data as any).success) { toast.error((data as any).error || "Transfer failed"); }
+      else {
+        toast.success(`${fmt(amt)} transferred from Deposit to Interest wallet`);
+        setInterestTransferTarget(null); setInterestTransferAmount(""); setInterestTransferNote("");
+        if (expandedUser === interestTransferTarget.user_id) {
+          toggleExpand(interestTransferTarget.user_id);
+          setTimeout(() => toggleExpand(interestTransferTarget.user_id), 100);
+        }
+      }
+    } catch (err: any) { toast.error(err?.message || "An unexpected error occurred"); }
+    setInterestTransferring(false);
+  };
+
+
     const q = search.toLowerCase();
     return !q || p.full_name?.toLowerCase().includes(q) || p.phone?.toLowerCase().includes(q) || p.user_id.toLowerCase().includes(q);
   });
