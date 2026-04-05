@@ -47,8 +47,6 @@ const Profile = () => {
         setKycStatus(data.kyc_status ?? "pending");
         setReferralCode(data.referral_code ?? "");
         setAvatarUrl(data.avatar_url ?? null);
-        setKycDocumentUrl((data as any).kyc_document_url ?? null);
-        setKycRejectionReason((data as any).kyc_rejection_reason ?? null);
       }
       setLoading(false);
     };
