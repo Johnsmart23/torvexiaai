@@ -193,7 +193,39 @@ const AdminUserManagement = () => {
     setDeleting(false);
   };
 
-  const filtered = profiles.filter((p) => {
+  const toggleAdmin = async (profile: UserProfile) => {
+    if (!adminUser) return;
+    const isCurrentlyAdmin = profile.is_admin;
+    try {
+      if (isCurrentlyAdmin) {
+        // Remove admin role
+        const { error } = await supabase
+          .from("user_roles")
+          .delete()
+          .eq("user_id", profile.user_id)
+          .eq("role", "admin");
+        if (error) throw error;
+        // Update profiles table
+        await supabase.from("profiles").update({ is_admin: false }).eq("id", profile.id);
+        toast.success(`${profile.full_name || "User"} removed as admin`);
+        setProfiles((prev) => prev.map((p) => p.id === profile.id ? { ...p, is_admin: false } : p));
+      } else {
+        // Add admin role
+        const { error } = await supabase
+          .from("user_roles")
+          .insert({ user_id: profile.user_id, role: "admin" });
+        if (error) throw error;
+        // Update profiles table
+        await supabase.from("profiles").update({ is_admin: true }).eq("id", profile.id);
+        toast.success(`${profile.full_name || "User"} is now an admin`);
+        setProfiles((prev) => prev.map((p) => p.id === profile.id ? { ...p, is_admin: true } : p));
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update admin status");
+    }
+  };
+
+
     const q = search.toLowerCase();
     return !q || p.full_name?.toLowerCase().includes(q) || p.phone?.toLowerCase().includes(q) || p.user_id.toLowerCase().includes(q);
   });
