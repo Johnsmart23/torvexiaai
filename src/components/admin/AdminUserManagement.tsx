@@ -76,6 +76,11 @@ const AdminUserManagement = () => {
   // KYC rejection dialog
   const [rejectTarget, setRejectTarget] = useState<UserProfile | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
+  // Deposit to Interest transfer
+  const [interestTransferTarget, setInterestTransferTarget] = useState<UserProfile | null>(null);
+  const [interestTransferAmount, setInterestTransferAmount] = useState("");
+  const [interestTransferNote, setInterestTransferNote] = useState("");
+  const [interestTransferring, setInterestTransferring] = useState(false);
 
   useEffect(() => { fetchProfiles(); }, []);
 
