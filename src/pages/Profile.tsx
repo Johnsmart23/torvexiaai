@@ -30,8 +30,6 @@ const Profile = () => {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [kycStatus, setKycStatus] = useState("pending");
-  const [kycDocumentUrl, setKycDocumentUrl] = useState<string | null>(null);
-  const [kycRejectionReason, setKycRejectionReason] = useState<string | null>(null);
   const [referralCode, setReferralCode] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
