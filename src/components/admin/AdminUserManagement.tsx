@@ -319,6 +319,9 @@ const AdminUserManagement = () => {
                     <Button size="sm" variant="outline" onClick={() => toggleSuspend(p.id, p.is_suspended)} className={p.is_suspended ? "text-success border-success/30" : "text-destructive border-destructive/30"}>
                       {p.is_suspended ? "Unsuspend" : "Suspend"}
                     </Button>
+                    <Button size="sm" variant="outline" onClick={() => toggleAdmin(p)} className={p.is_admin ? "text-warning border-warning/30 hover:bg-warning/10" : "text-primary border-primary/30 hover:bg-primary/10"}>
+                      {p.is_admin ? <><ShieldOff className="h-3 w-3 mr-1" /> Remove Admin</> : <><ShieldCheck className="h-3 w-3 mr-1" /> Make Admin</>}
+                    </Button>
                     <Button size="sm" variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => { setDeleteTarget(p); setDeleteConfirmText(""); }}>
                       <Trash2 className="h-3 w-3" />
                     </Button>
