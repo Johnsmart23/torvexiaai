@@ -38,7 +38,7 @@ const Profile = () => {
       if (!user) return;
       const { data, error } = await supabase
         .from("profiles")
-        .select("full_name, phone, kyc_status, referral_code, avatar_url, kyc_document_url, kyc_rejection_reason")
+        .select("full_name, phone, kyc_status, referral_code, avatar_url")
         .eq("user_id", user.id)
         .single();
       if (!error && data) {
