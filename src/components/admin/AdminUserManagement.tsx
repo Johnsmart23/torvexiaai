@@ -256,7 +256,7 @@ const AdminUserManagement = () => {
     setInterestTransferring(false);
   };
 
-
+  const filtered = profiles.filter((p) => {
     const q = search.toLowerCase();
     return !q || p.full_name?.toLowerCase().includes(q) || p.phone?.toLowerCase().includes(q) || p.user_id.toLowerCase().includes(q);
   });
