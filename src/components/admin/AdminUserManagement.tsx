@@ -505,6 +505,32 @@ const AdminUserManagement = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Deposit to Interest Transfer Dialog */}
+      <Dialog open={!!interestTransferTarget} onOpenChange={(o) => { if (!o) { setInterestTransferTarget(null); setInterestTransferAmount(""); setInterestTransferNote(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Wallet className="h-5 w-5 text-accent" /> Transfer Deposit → Interest</DialogTitle>
+            <DialogDescription>Move funds from {interestTransferTarget?.full_name || "this user"}'s deposit wallet to their interest (profit) wallet.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <p className="text-xs text-muted-foreground">User's Deposit Balance</p>
+              <p className="text-lg font-bold text-foreground">
+                {fmt(Number(userWallets.find((w: any) => w.wallet_type === "deposit")?.balance || 0))}
+              </p>
+            </div>
+            <div><Label>Amount (USD)</Label><Input type="number" min="1" placeholder="e.g. 100" value={interestTransferAmount} onChange={(e) => setInterestTransferAmount(e.target.value)} /></div>
+            <div><Label>Note (optional)</Label><Input placeholder="e.g. Interest allocation" value={interestTransferNote} onChange={(e) => setInterestTransferNote(e.target.value)} /></div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => { setInterestTransferTarget(null); setInterestTransferAmount(""); setInterestTransferNote(""); }}>Cancel</Button>
+              <Button className="flex-1" onClick={handleInterestTransfer} disabled={interestTransferring}>
+                {interestTransferring ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null} Transfer
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
