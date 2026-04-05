@@ -27,6 +27,8 @@ import {
   Trash2,
   FileText,
   ExternalLink,
+  ShieldCheck,
+  ShieldOff,
 } from "lucide-react";
 import { toast } from "sonner";
 
