@@ -2,17 +2,26 @@ import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import type { InvestmentPlan } from "@/hooks/use-investment-plans";
 
 interface PlanCardProps {
-  name: string;
-  dailyProfit: string;
-  duration: string;
-  capitalReturn: string;
-  features: string[];
+  plan: InvestmentPlan;
   highlighted?: boolean;
 }
 
-const PlanCard = ({ name, dailyProfit, duration, capitalReturn, features, highlighted }: PlanCardProps) => (
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(amount);
+
+const PlanCard = ({ plan, highlighted }: PlanCardProps) => {
+  const features = [
+    `Minimum deposit ${formatCurrency(plan.min_deposit)}`,
+    ...(plan.max_deposit === null ? [] : [`Maximum deposit ${formatCurrency(plan.max_deposit)}`]),
+    "Daily profit accrual",
+    "Capital returned at end of plan",
+    ...(plan.referral_bonus > 0 ? [`${plan.referral_bonus}% referral bonus`] : []),
+  ];
+
+  return (
   <motion.div
     whileHover={{ y: -8, transition: { duration: 0.25 } }}
     className={`relative rounded-xl border p-6 transition-shadow duration-200 ${
@@ -26,12 +35,14 @@ const PlanCard = ({ name, dailyProfit, duration, capitalReturn, features, highli
         Most Popular
       </div>
     )}
-    <h3 className="text-lg font-bold text-foreground">{name}</h3>
+    <h3 className="text-lg font-bold text-foreground">{plan.name}</h3>
     <div className="mt-3 flex items-baseline gap-1">
-      <span className="text-4xl font-bold text-primary">{dailyProfit}</span>
+      <span className="text-4xl font-bold text-primary">{plan.daily_rate}%</span>
       <span className="text-sm text-muted-foreground">/ day</span>
     </div>
-    <p className="mt-1 text-sm text-muted-foreground">{duration} · Capital returned {capitalReturn}</p>
+    <p className="mt-1 text-sm text-muted-foreground">
+      {plan.duration_days} days · Capital returned at maturity
+    </p>
     <ul className="mt-5 space-y-2">
       {features.map((f) => (
         <li key={f} className="flex items-center gap-2 text-sm text-foreground">
@@ -48,6 +59,7 @@ const PlanCard = ({ name, dailyProfit, duration, capitalReturn, features, highli
       <Link to="/register">Start Investing</Link>
     </Button>
   </motion.div>
-);
+  );
+};
 
 export default PlanCard;

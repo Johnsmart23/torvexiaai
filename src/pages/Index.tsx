@@ -6,6 +6,7 @@ import Testimonials from "@/components/Testimonials";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useInvestmentPlans } from "@/hooks/use-investment-plans";
 import {
   Shield,
   TrendingUp,
@@ -17,35 +18,10 @@ import {
   BarChart3,
 } from "lucide-react";
 
-const plans = [
-  {
-    name: "Bronze",
-    dailyProfit: "1%",
-    duration: "30 days",
-    capitalReturn: "at maturity",
-    features: ["Min. deposit $100", "Daily profit accrual", "Capital returned at end", "24/7 monitoring"],
-  },
-  {
-    name: "Silver",
-    dailyProfit: "2.5%",
-    duration: "30 days",
-    capitalReturn: "at maturity",
-    features: ["Min. deposit $500", "Higher daily returns", "Priority support", "Reinvestment options"],
-    highlighted: true,
-  },
-  {
-    name: "Gold",
-    dailyProfit: "4%",
-    duration: "30 days",
-    capitalReturn: "at maturity",
-    features: ["Min. deposit $1,000", "Maximum daily returns", "VIP support", "Exclusive benefits"],
-  },
-];
-
 const steps = [
   { icon: Users, title: "Register & Verify", desc: "Create your account and complete KYC verification." },
   { icon: Wallet, title: "Deposit Funds", desc: "Fund your wallet via bank transfer or cryptocurrency." },
-  { icon: BarChart3, title: "Choose a Plan", desc: "Select Bronze, Silver, or Gold based on your goals." },
+  { icon: BarChart3, title: "Choose a Plan", desc: "Select an investment plan that matches your goals." },
   { icon: TrendingUp, title: "Earn Daily Profit", desc: "Watch your profits grow daily in your dashboard." },
 ];
 
@@ -59,7 +35,11 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0, 0, 0.2, 1] as const } },
 };
 
-const Index = () => (
+const Index = () => {
+  const { plans, loading } = useInvestmentPlans();
+  const maxDailyRate = plans.reduce((max, plan) => Math.max(max, plan.daily_rate), 0);
+
+  return (
   <div className="min-h-screen bg-background">
     <Navbar />
 
@@ -82,8 +62,9 @@ const Index = () => (
             <span className="opacity-90">Confidence</span>
           </motion.h1>
           <motion.p variants={fadeUp} className="mt-5 text-lg text-primary-foreground/80 md:text-xl">
-            Professional investment management with daily returns up to 4%.
-            Transparent, auditable, and fully secured.
+            Professional investment management
+            {maxDailyRate > 0 ? ` with daily returns up to ${maxDailyRate}%.` : "."}
+            {" "}Transparent, auditable, and fully secured.
           </motion.p>
           <motion.div variants={fadeUp} className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <Button variant="accent" size="xl" asChild>
@@ -160,11 +141,19 @@ const Index = () => (
           viewport={{ once: true, margin: "-60px" }}
           variants={staggerContainer}
         >
-          {plans.map((plan) => (
-            <motion.div key={plan.name} variants={fadeUp}>
-              <PlanCard {...plan} />
-            </motion.div>
-          ))}
+          {loading ? (
+            <p className="col-span-full py-8 text-center text-sm text-muted-foreground">Loading investment plans...</p>
+          ) : plans.length > 0 ? (
+            plans.map((plan, index) => (
+              <motion.div key={plan.id} variants={fadeUp}>
+                <PlanCard plan={plan} highlighted={index === 1} />
+              </motion.div>
+            ))
+          ) : (
+            <p className="col-span-full py-8 text-center text-sm text-muted-foreground">
+              No investment plans are currently available.
+            </p>
+          )}
         </motion.div>
       </div>
     </section>
@@ -193,6 +182,7 @@ const Index = () => (
 
     <Footer />
   </div>
-);
+  );
+};
 
 export default Index;

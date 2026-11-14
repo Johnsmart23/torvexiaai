@@ -9,17 +9,20 @@ import {
   BarChart3,
   LogOut,
   CheckSquare,
+  Wallet,
 } from "lucide-react";
 import AdminFinanceDashboard from "@/components/admin/AdminFinanceDashboard";
 import AdminUserManagement from "@/components/admin/AdminUserManagement";
 import AdminPlanManagement from "@/components/admin/AdminPlanManagement";
 import AdminTransactionApproval from "@/components/admin/AdminTransactionApproval";
+import AdminPaymentMethodManagement from "@/components/admin/AdminPaymentMethodManagement";
 
 const tabs = [
   { key: "dashboard" as const, label: "Dashboard", icon: DollarSign },
   { key: "users" as const, label: "Users", icon: Users },
   { key: "approvals" as const, label: "Approvals", icon: CheckSquare },
   { key: "plans" as const, label: "Plans", icon: BarChart3 },
+  { key: "payment-methods" as const, label: "Payment Methods", icon: Wallet },
 ];
 
 type TabKey = (typeof tabs)[number]["key"];
@@ -73,6 +76,7 @@ const Admin = () => {
         {activeTab === "users" && <AdminUserManagement />}
         {activeTab === "approvals" && <AdminTransactionApproval />}
         {activeTab === "plans" && <AdminPlanManagement />}
+        {activeTab === "payment-methods" && <AdminPaymentMethodManagement />}
       </div>
     </div>
   );

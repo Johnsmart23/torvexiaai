@@ -80,6 +80,7 @@ export type Database = {
           duration_days: number
           ends_at: string
           id: string
+          last_interest_at: string
           plan_name: string
           started_at: string
           status: Database["public"]["Enums"]["investment_status"]
@@ -95,6 +96,7 @@ export type Database = {
           duration_days?: number
           ends_at?: string
           id?: string
+          last_interest_at?: string
           plan_name: string
           started_at?: string
           status?: Database["public"]["Enums"]["investment_status"]
@@ -110,6 +112,7 @@ export type Database = {
           duration_days?: number
           ends_at?: string
           id?: string
+          last_interest_at?: string
           plan_name?: string
           started_at?: string
           status?: Database["public"]["Enums"]["investment_status"]

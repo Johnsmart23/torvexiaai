@@ -30,7 +30,6 @@ const fmt = (n: number) =>
 
 const emptyForm = {
   name: "",
-  daily_rate: "",
   min_deposit: "",
   max_deposit: "",
   duration_days: "30",
@@ -70,7 +69,6 @@ const AdminPlanManagement = () => {
     setEditing(plan);
     setForm({
       name: plan.name,
-      daily_rate: plan.daily_rate.toString(),
       min_deposit: plan.min_deposit.toString(),
       max_deposit: plan.max_deposit?.toString() || "",
       duration_days: plan.duration_days.toString(),
@@ -80,7 +78,7 @@ const AdminPlanManagement = () => {
   };
 
   const handleSubmit = async () => {
-    if (!form.name || !form.daily_rate || !form.min_deposit || !form.duration_days) {
+    if (!form.name || !form.min_deposit || !form.duration_days) {
       toast.error("Fill all required fields");
       return;
     }
@@ -88,7 +86,7 @@ const AdminPlanManagement = () => {
     setSubmitting(true);
     const payload = {
       name: form.name.trim(),
-      daily_rate: parseFloat(form.daily_rate),
+      daily_rate: 10,
       min_deposit: parseFloat(form.min_deposit),
       max_deposit: form.max_deposit ? parseFloat(form.max_deposit) : null,
       duration_days: parseInt(form.duration_days),
@@ -168,7 +166,7 @@ const AdminPlanManagement = () => {
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-foreground">{plan.name}</p>
               <p className="text-sm text-muted-foreground">
-                {plan.daily_rate}% daily · {plan.duration_days} days · Min {fmt(plan.min_deposit)}
+                10% daily · {plan.duration_days} days · Min {fmt(plan.min_deposit)}
                 {plan.max_deposit ? ` · Max ${fmt(plan.max_deposit)}` : ""}
               </p>
               <p className="text-xs text-muted-foreground">
@@ -223,15 +221,10 @@ const AdminPlanManagement = () => {
               <Label>Plan Name *</Label>
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Platinum" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Daily Rate (%) *</Label>
-                <Input type="number" step="0.1" value={form.daily_rate} onChange={(e) => setForm({ ...form, daily_rate: e.target.value })} />
-              </div>
-              <div>
-                <Label>Duration (days) *</Label>
-                <Input type="number" value={form.duration_days} onChange={(e) => setForm({ ...form, duration_days: e.target.value })} />
-              </div>
+            <p className="text-sm text-muted-foreground">Daily interest is fixed at 10% for all plans.</p>
+            <div>
+              <Label>Duration (days) *</Label>
+              <Input type="number" value={form.duration_days} onChange={(e) => setForm({ ...form, duration_days: e.target.value })} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
