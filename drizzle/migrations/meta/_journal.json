@@ -8,6 +8,13 @@
       "when": 1794530279232,
       "tag": "0000_create_payment_methods",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794635570337,
+      "tag": "0001_remove_duplicate_signup_wallet_trigger",
+      "breakpoints": true
     }
   ]
 }
