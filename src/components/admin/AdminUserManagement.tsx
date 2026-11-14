@@ -38,6 +38,7 @@ import {
   ShieldCheck,
   ShieldOff,
   Mail,
+  MailCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,6 +46,7 @@ interface UserProfile {
   id: string;
   user_id: string;
   email: string | null;
+  username: string | null;
   full_name: string | null;
   phone: string | null;
   country: string | null;
@@ -86,6 +88,7 @@ const AdminUserManagement = () => {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [resettingPasswordUserId, setResettingPasswordUserId] = useState<string | null>(null);
+  const [resendingConfirmationUserId, setResendingConfirmationUserId] = useState<string | null>(null);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [userWallets, setUserWallets] = useState<UserWallet[]>([]);
   const [userTxs, setUserTxs] = useState<any[]>([]);
@@ -342,16 +345,45 @@ const AdminUserManagement = () => {
     }
 
     setResettingPasswordUserId(profile.user_id);
-    const { error } = await supabase.auth.resetPasswordForEmail(profile.email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+    const { data, error } = await supabase.functions.invoke("account-auth", {
+      body: {
+        action: "admin-reset-password",
+        user_id: profile.user_id,
+      },
     });
 
     if (error) {
       toast.error(error.message || "Failed to send password reset email");
+    } else if (!data?.success) {
+      toast.error(data?.error || "Failed to send password reset email");
     } else {
       toast.success(`Password reset link sent to ${profile.email}`);
     }
     setResettingPasswordUserId(null);
+  };
+
+  const resendConfirmationEmail = async (profile: UserProfile) => {
+    if (!profile.email) {
+      toast.error("This user does not have an email address on their profile");
+      return;
+    }
+
+    setResendingConfirmationUserId(profile.user_id);
+    const { data, error } = await supabase.functions.invoke("account-auth", {
+      body: {
+        action: "admin-resend-confirmation",
+        user_id: profile.user_id,
+      },
+    });
+
+    if (error) {
+      toast.error(error.message || "Failed to resend confirmation email");
+    } else if (!data?.success) {
+      toast.error(data?.error || "Failed to resend confirmation email");
+    } else {
+      toast.success(`Confirmation email sent to ${profile.email}`);
+    }
+    setResendingConfirmationUserId(null);
   };
 
   const handleInterestTransfer = async () => {
@@ -384,6 +416,7 @@ const AdminUserManagement = () => {
     const q = search.toLowerCase();
     return !q ||
       p.full_name?.toLowerCase().includes(q) ||
+      p.username?.toLowerCase().includes(q) ||
       p.phone?.toLowerCase().includes(q) ||
       p.country?.toLowerCase().includes(q) ||
       p.user_id.toLowerCase().includes(q);
@@ -444,6 +477,7 @@ const AdminUserManagement = () => {
                       )}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">{p.email || "Email unavailable"}</p>
+                    {p.username && <p className="text-xs text-muted-foreground truncate">Username: {p.username}</p>}
                     <p className="text-xs text-muted-foreground truncate">{p.phone || "No phone"}</p>
                     <p className="text-xs text-muted-foreground truncate">Country: {p.country || "Not provided"}</p>
                     <p className="text-xs text-muted-foreground">Joined {new Date(p.created_at).toLocaleDateString()}</p>
@@ -493,6 +527,17 @@ const AdminUserManagement = () => {
                         ? <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                         : <Mail className="mr-1 h-3 w-3" />}
                       Send Reset Link
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={!p.email || resendingConfirmationUserId === p.user_id}
+                      onClick={() => void resendConfirmationEmail(p)}
+                    >
+                      {resendingConfirmationUserId === p.user_id
+                        ? <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                        : <MailCheck className="mr-1 h-3 w-3" />}
+                      Resend Confirmation
                     </Button>
                     {isSuperAdmin && adminUser?.id !== p.user_id && (
                       <Button size="sm" variant="outline" onClick={() => void toggleAdmin(p)} className={p.is_admin ? "text-warning border-warning/30 hover:bg-warning/10" : "text-primary border-primary/30 hover:bg-primary/10"}>

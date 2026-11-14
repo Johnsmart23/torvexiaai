@@ -1,4 +1,7 @@
 project_id = "fqdpytsqqijjhnkqtpzm"
 
 [auth.email]
-enable_confirmations = false
+enable_confirmations = true
+
+[functions.account-auth]
+verify_jwt = false
