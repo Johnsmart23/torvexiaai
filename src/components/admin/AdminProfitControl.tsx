@@ -7,7 +7,7 @@ import { toast } from "sonner";
 const AdminProfitControl = () => {
   const [profitsPaused, setProfitsPaused] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
 
   const fetchSettings = async () => {
@@ -18,11 +18,15 @@ const AdminProfitControl = () => {
       .single();
 
     if (error) {
-      toast.error("Failed to load profit settings");
-      setLoadError(true);
+      setLoadError(error.message);
+      toast.error(`Failed to load profit settings: ${error.message}`);
+    } else if (typeof data.profits_paused !== "boolean") {
+      const message = "The server returned an invalid profit status";
+      setLoadError(message);
+      toast.error(`Failed to load profit settings: ${message}`);
     } else {
       setProfitsPaused(data.profits_paused);
-      setLoadError(false);
+      setLoadError(null);
     }
     setLoading(false);
   };
@@ -63,6 +67,7 @@ const AdminProfitControl = () => {
     return (
       <div className="max-w-2xl rounded-xl border border-destructive/30 bg-card p-6 shadow-card">
         <p className="text-sm text-destructive">Profit settings could not be loaded. The current status is unknown.</p>
+        <p className="mt-2 text-xs text-muted-foreground">{loadError}</p>
         <Button className="mt-4" variant="outline" onClick={() => {
           setLoading(true);
           void fetchSettings();

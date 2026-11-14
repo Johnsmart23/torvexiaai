@@ -50,7 +50,6 @@ const Plans = () => {
           <tbody className="text-sm">
             {[
               { feature: "Daily Profit", value: (plan: typeof plans[number]) => `${plan.daily_rate}%` },
-              { feature: "Profit Duration", value: () => "Ongoing; can be paused by admin" },
               { feature: "Minimum Deposit", value: (plan: typeof plans[number]) => formatCurrency(plan.min_deposit) },
               { feature: "Maximum Deposit", value: (plan: typeof plans[number]) => plan.max_deposit === null ? "No limit" : formatCurrency(plan.max_deposit) },
               { feature: "Referral Bonus", value: (plan: typeof plans[number]) => `${plan.referral_bonus}%` },
