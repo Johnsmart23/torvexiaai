@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/use-profile";
 import { useAdmin } from "@/hooks/use-admin";
+import ThemeModeToggle from "@/components/ThemeModeToggle";
 
 const navLinks = [
   { label: "Home", path: "/" },
@@ -84,6 +85,7 @@ const Navbar = () => {
         </div>
 
         <div className="hidden items-center gap-2 md:flex">
+          <ThemeModeToggle compact />
           {user ? (
             <>
               <Button variant="ghost" size="sm" asChild>
@@ -169,6 +171,7 @@ const Navbar = () => {
                   {link.label}
                 </Link>
               ))}
+              <ThemeModeToggle className="mt-2 w-full justify-start" />
               <div className="mt-3 flex gap-2">
                 {user ? (
                   <>

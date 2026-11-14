@@ -22,6 +22,7 @@ import AdminTransactionApproval from "@/components/admin/AdminTransactionApprova
 import AdminPaymentMethodManagement from "@/components/admin/AdminPaymentMethodManagement";
 import AdminProfitControl from "@/components/admin/AdminProfitControl";
 import AdminManagement from "@/components/admin/AdminManagement";
+import ThemeModeToggle from "@/components/ThemeModeToggle";
 
 const baseTabs = [
   { key: "dashboard" as const, label: "Dashboard", icon: DollarSign },
@@ -53,6 +54,9 @@ const Admin = () => {
             <span className="font-bold text-foreground">Admin Panel</span>
           </Link>
           <div className="flex items-center gap-2">
+            <div className="hidden sm:block">
+              <ThemeModeToggle compact />
+            </div>
             <Link to="/dashboard" className="hidden sm:block">
               <Button variant="ghost" size="sm">Dashboard</Button>
             </Link>
@@ -70,6 +74,7 @@ const Admin = () => {
                   <SheetTitle>Admin Menu</SheetTitle>
                 </SheetHeader>
                 <nav className="mt-6 flex flex-col gap-2">
+                  <ThemeModeToggle className="justify-start px-3" />
                   {tabs.map((tab) => (
                     <SheetClose asChild key={tab.key}>
                       <Button

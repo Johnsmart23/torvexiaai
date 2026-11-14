@@ -11,6 +11,7 @@ import WithdrawDialog from "@/components/WithdrawDialog";
 import NotificationBell from "@/components/NotificationBell";
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAdmin } from "@/hooks/use-admin";
+import ThemeModeToggle from "@/components/ThemeModeToggle";
 import {
   Shield,
   Wallet,
@@ -25,6 +26,8 @@ import {
   BarChart3,
   UserRound,
   ShieldCheck,
+  ReceiptText,
+  ScrollText,
   UserCheck,
   Loader2,
   XCircle,
@@ -192,6 +195,21 @@ const Dashboard = () => {
                   <Button variant="ghost" className="justify-start px-3" onClick={() => void copyReferralLink()}>
                     <Users className="h-4 w-4" /> Referral Link
                   </Button>
+                  <SheetClose asChild>
+                    <Link to="/plans" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-secondary">
+                      <ScrollText className="h-4 w-4" /> Plans
+                    </Link>
+                  </SheetClose>
+                  <SheetClose asChild>
+                    <Button
+                      variant="ghost"
+                      className="justify-start px-3"
+                      onClick={() => setActiveTab("history")}
+                    >
+                      <ReceiptText className="h-4 w-4" /> Transactions
+                    </Button>
+                  </SheetClose>
+                  <ThemeModeToggle className="justify-start px-3" />
                   <SheetClose asChild>
                     <Link to="/" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-secondary">
                       <Shield className="h-4 w-4" /> Home
