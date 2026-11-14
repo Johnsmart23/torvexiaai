@@ -88,7 +88,7 @@ const AdminProfitControl = () => {
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
             Resuming skips paused days. Interest starts accruing again on the next scheduled daily run.
-            Active investment durations are extended by the paused period. New investments are currently dormant.
+            New investments are currently dormant.
           </p>
           <Button
             className="mt-5"

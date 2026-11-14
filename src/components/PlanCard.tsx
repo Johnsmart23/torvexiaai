@@ -16,7 +16,7 @@ const PlanCard = ({ plan, highlighted }: PlanCardProps) => {
     `Minimum deposit ${formatCurrency(plan.min_deposit)}`,
     ...(plan.max_deposit === null ? [] : [`Maximum deposit ${formatCurrency(plan.max_deposit)}`]),
     "Daily profit accrual",
-    "Capital returned at end of plan",
+    "Ongoing profit with no fixed end date",
     ...(plan.referral_bonus > 0 ? [`${plan.referral_bonus}% referral bonus`] : []),
   ];
 
@@ -39,9 +39,7 @@ const PlanCard = ({ plan, highlighted }: PlanCardProps) => {
       <span className="text-4xl font-bold text-primary">{plan.daily_rate}%</span>
       <span className="text-sm text-muted-foreground">/ day</span>
     </div>
-    <p className="mt-1 text-sm text-muted-foreground">
-      {plan.duration_days} days · Capital returned at maturity
-    </p>
+    <p className="mt-1 text-sm text-muted-foreground">Ongoing · No fixed end date</p>
     <ul className="mt-5 space-y-2">
       {features.map((f) => (
         <li key={f} className="flex items-center gap-2 text-sm text-foreground">

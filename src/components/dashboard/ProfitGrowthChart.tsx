@@ -15,12 +15,8 @@ interface Investment {
   plan_name: string;
   amount: number;
   daily_rate: number;
-  duration_days: number;
   days_completed: number;
   total_profit_earned: number;
-  started_at: string;
-  ends_at: string;
-  status: string;
 }
 
 interface ProfitGrowthChartProps {
@@ -32,37 +28,30 @@ const ProfitGrowthChart = ({ investments, fmt }: ProfitGrowthChartProps) => {
   const chartData = useMemo(() => {
     if (!investments.length) return [];
 
-    // Find the earliest start date
-    const startDates = investments.map((inv) => new Date(inv.started_at));
-    const earliest = new Date(Math.min(...startDates.map((d) => d.getTime())));
-
-    // Find the latest end (max days_completed across all)
-    const maxDays = Math.max(...investments.map((inv) => inv.days_completed));
+    const maxDays = Math.min(30, Math.max(...investments.map((inv) => inv.days_completed)));
+    const startingProfit = investments.reduce((total, inv) => {
+      const dailyProfit = (Number(inv.amount) * Number(inv.daily_rate)) / 100;
+      return total + Math.max(0, Number(inv.total_profit_earned) - dailyProfit * Math.min(inv.days_completed, maxDays));
+    }, 0);
 
     const data = [];
     for (let day = 0; day <= maxDays; day++) {
-      const date = new Date(earliest);
-      date.setDate(earliest.getDate() + day);
-
-      let cumulativeProfit = 0;
+      let cumulativeProfit = startingProfit;
       let dailyProfit = 0;
 
       investments.forEach((inv) => {
-        const invStart = new Date(inv.started_at);
-        const daysSinceStart = Math.floor(
-          (date.getTime() - invStart.getTime()) / (1000 * 60 * 60 * 24)
-        );
-
-        if (daysSinceStart >= 0 && daysSinceStart < inv.days_completed) {
-          const invDailyProfit = (Number(inv.amount) * Number(inv.daily_rate)) / 100;
-          cumulativeProfit += invDailyProfit * (daysSinceStart + 1);
+        const invDailyProfit = (Number(inv.amount) * Number(inv.daily_rate)) / 100;
+        const visibleDays = Math.min(inv.days_completed, maxDays);
+        const firstVisibleDay = maxDays - visibleDays;
+        const visibleProfitDays = Math.max(0, Math.min(day - firstVisibleDay, visibleDays));
+        if (day > firstVisibleDay) {
+          cumulativeProfit += invDailyProfit * visibleProfitDays;
           dailyProfit += invDailyProfit;
         }
       });
 
       data.push({
-        day: `Day ${day + 1}`,
-        date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        day: day === 0 ? "Earlier" : `Credit ${day}`,
         profit: Math.round(cumulativeProfit * 100) / 100,
         daily: Math.round(dailyProfit * 100) / 100,
       });
@@ -81,7 +70,7 @@ const ProfitGrowthChart = ({ investments, fmt }: ProfitGrowthChartProps) => {
         </div>
         <div>
           <h3 className="font-semibold text-foreground text-sm">Profit Growth</h3>
-          <p className="text-xs text-muted-foreground">Cumulative earnings over time</p>
+          <p className="text-xs text-muted-foreground">Latest 30 credited interest days</p>
         </div>
       </div>
 
@@ -96,7 +85,7 @@ const ProfitGrowthChart = ({ investments, fmt }: ProfitGrowthChartProps) => {
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
             <XAxis
-              dataKey="date"
+              dataKey="day"
               tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
               tickLine={false}
               axisLine={{ stroke: "hsl(var(--border))" }}

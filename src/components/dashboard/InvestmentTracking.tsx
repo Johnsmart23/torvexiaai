@@ -2,14 +2,11 @@ import { useState } from "react";
 import {
   BarChart3,
   TrendingUp,
-  Clock,
   CheckCircle,
-  Calendar,
   ChevronDown,
   ChevronUp,
   Wallet,
 } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import ProfitGrowthChart from "./ProfitGrowthChart";
 
@@ -18,12 +15,9 @@ interface Investment {
   plan_name: string;
   amount: number;
   daily_rate: number;
-  duration_days: number;
   days_completed: number;
   total_profit_earned: number;
   started_at: string;
-  ends_at: string;
-  status: string;
 }
 
 interface InvestmentTrackingProps {
@@ -75,13 +69,11 @@ const InvestmentTracking = ({ investments, fmt }: InvestmentTrackingProps) => {
 
       {/* Investment Cards */}
       {investments.map((inv) => {
-        const daysLeft = Math.max(0, inv.duration_days - inv.days_completed);
-        const progress = Math.round((inv.days_completed / inv.duration_days) * 100);
         const dailyProfit = (Number(inv.amount) * Number(inv.daily_rate)) / 100;
-        const totalExpected = dailyProfit * inv.duration_days;
         const isExpanded = expandedId === inv.id;
-        const maturityDate = new Date(inv.ends_at);
         const startDate = new Date(inv.started_at);
+        const firstVisibleDay = Math.max(0, inv.days_completed - 30);
+        const visibleDays = Math.min(inv.days_completed, 30);
 
         return (
           <div key={inv.id} className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
@@ -104,15 +96,6 @@ const InvestmentTracking = ({ investments, fmt }: InvestmentTrackingProps) => {
                 </Badge>
               </div>
 
-              {/* Progress */}
-              <div className="mt-4">
-                <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-                  <span>Day {inv.days_completed} of {inv.duration_days}</span>
-                  <span>{progress}%</span>
-                </div>
-                <Progress value={progress} className="h-2" />
-              </div>
-
               {/* Key Metrics */}
               <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
@@ -124,36 +107,19 @@ const InvestmentTracking = ({ investments, fmt }: InvestmentTrackingProps) => {
                   <p className="text-sm font-semibold text-foreground mt-0.5">{fmt(Number(inv.total_profit_earned))}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Days Left</p>
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Interest Days Credited</p>
                   <p className="text-sm font-semibold text-foreground mt-0.5 flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                    {daysLeft} days
+                    {inv.days_completed}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Maturity Date</p>
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Started</p>
                   <p className="text-sm font-semibold text-foreground mt-0.5 flex items-center gap-1">
-                    <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                    {maturityDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    {startDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </p>
                 </div>
               </div>
 
-              {/* Profit Growth Bar */}
-              <div className="mt-4 rounded-lg bg-muted/30 p-3">
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="text-muted-foreground">Profit Growth</span>
-                  <span className="font-medium text-foreground">
-                    {fmt(Number(inv.total_profit_earned))} / {fmt(totalExpected)}
-                  </span>
-                </div>
-                <div className="h-2 w-full rounded-full bg-secondary">
-                  <div
-                    className="h-2 rounded-full bg-success transition-all"
-                    style={{ width: `${Math.min(100, (Number(inv.total_profit_earned) / totalExpected) * 100)}%` }}
-                  />
-                </div>
-              </div>
             </div>
 
             {/* Expand Toggle */}
@@ -162,7 +128,7 @@ const InvestmentTracking = ({ investments, fmt }: InvestmentTrackingProps) => {
               className="w-full flex items-center justify-center gap-1.5 py-2.5 border-t border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
             >
               {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-              {isExpanded ? "Hide" : "View"} Interest Schedule
+              {isExpanded ? "Hide" : "View"} Recent Interest Activity
             </button>
 
             {/* Interest Schedule (collapsible) */}
@@ -170,19 +136,16 @@ const InvestmentTracking = ({ investments, fmt }: InvestmentTrackingProps) => {
               <div className="border-t border-border p-5 bg-muted/10">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    Day 1 – Day {inv.duration_days}
+                    Recent credited days
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Expected: <span className="text-success font-semibold">{fmt(totalExpected)}</span>
+                    {inv.days_completed} total days credited
                   </p>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 max-h-72 overflow-y-auto pr-1">
-                  {Array.from({ length: inv.duration_days }, (_, i) => {
-                    const dayDate = new Date(startDate);
-                    dayDate.setDate(startDate.getDate() + i);
+                  {Array.from({ length: visibleDays }, (_, index) => {
+                    const i = firstVisibleDay + index;
                     const isPaid = i < inv.days_completed;
-                    const isToday = i === inv.days_completed && dayDate.toDateString() === new Date().toDateString();
-                    const dateStr = dayDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
                     return (
                       <div
@@ -190,21 +153,18 @@ const InvestmentTracking = ({ investments, fmt }: InvestmentTrackingProps) => {
                         className={`flex items-center justify-between rounded-md px-2.5 py-1.5 text-xs border transition-colors ${
                           isPaid
                             ? "bg-success/10 border-success/30"
-                            : isToday
-                            ? "bg-primary/10 border-primary/30 ring-1 ring-primary/20"
                             : "bg-muted/30 border-border"
                         }`}
                       >
                         <div className="flex flex-col">
-                          <span className={`font-medium ${isPaid ? "text-success" : isToday ? "text-primary" : "text-muted-foreground"}`}>
-                            Day {i + 1}
+                          <span className={`font-medium ${isPaid ? "text-success" : "text-muted-foreground"}`}>
+                            Interest day {i + 1}
                           </span>
-                          <span className="text-[10px] text-muted-foreground">{dateStr}</span>
+                          <span className="text-[10px] text-muted-foreground">10% of principal</span>
                         </div>
                         <div className="flex items-center gap-1">
                           {isPaid && <CheckCircle className="h-3 w-3 text-success" />}
-                          {isToday && <Clock className="h-3 w-3 text-primary" />}
-                          <span className={`font-semibold ${isPaid ? "text-success" : isToday ? "text-primary" : "text-muted-foreground/60"}`}>
+                          <span className={`font-semibold ${isPaid ? "text-success" : "text-muted-foreground/60"}`}>
                             {isPaid ? "+" : ""}{fmt(dailyProfit)}
                           </span>
                         </div>

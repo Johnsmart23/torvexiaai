@@ -19,7 +19,6 @@ interface Plan {
   daily_rate: number;
   min_deposit: number;
   max_deposit: number | null;
-  duration_days: number;
   referral_bonus: number;
   is_active: boolean;
   created_at: string;
@@ -32,7 +31,6 @@ const emptyForm = {
   name: "",
   min_deposit: "",
   max_deposit: "",
-  duration_days: "30",
   referral_bonus: "0",
 };
 
@@ -71,14 +69,13 @@ const AdminPlanManagement = () => {
       name: plan.name,
       min_deposit: plan.min_deposit.toString(),
       max_deposit: plan.max_deposit?.toString() || "",
-      duration_days: plan.duration_days.toString(),
       referral_bonus: plan.referral_bonus.toString(),
     });
     setDialogOpen(true);
   };
 
   const handleSubmit = async () => {
-    if (!form.name || !form.min_deposit || !form.duration_days) {
+    if (!form.name || !form.min_deposit) {
       toast.error("Fill all required fields");
       return;
     }
@@ -89,7 +86,6 @@ const AdminPlanManagement = () => {
       daily_rate: 10,
       min_deposit: parseFloat(form.min_deposit),
       max_deposit: form.max_deposit ? parseFloat(form.max_deposit) : null,
-      duration_days: parseInt(form.duration_days),
       referral_bonus: parseFloat(form.referral_bonus) || 0,
     };
 
@@ -166,7 +162,7 @@ const AdminPlanManagement = () => {
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-foreground">{plan.name}</p>
               <p className="text-sm text-muted-foreground">
-                10% daily · {plan.duration_days} days · Min {fmt(plan.min_deposit)}
+                10% daily · Ongoing · Min {fmt(plan.min_deposit)}
                 {plan.max_deposit ? ` · Max ${fmt(plan.max_deposit)}` : ""}
               </p>
               <p className="text-xs text-muted-foreground">
@@ -222,10 +218,6 @@ const AdminPlanManagement = () => {
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Platinum" />
             </div>
             <p className="text-sm text-muted-foreground">Daily interest is fixed at 10% for all plans.</p>
-            <div>
-              <Label>Duration (days) *</Label>
-              <Input type="number" value={form.duration_days} onChange={(e) => setForm({ ...form, duration_days: e.target.value })} />
-            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Min Deposit ($) *</Label>

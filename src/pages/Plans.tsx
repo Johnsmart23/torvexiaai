@@ -16,7 +16,7 @@ const Plans = () => {
       <div className="text-center">
         <h1 className="text-4xl font-bold text-foreground">Investment Plans</h1>
         <p className="mt-3 text-lg text-muted-foreground max-w-xl mx-auto">
-          Choose the plan that matches your investment goals. Each plan's duration and terms are shown below.
+          Choose a plan that matches your investment goals. Profits continue until paused by an administrator.
         </p>
       </div>
       <div className="mt-12 grid gap-6 md:grid-cols-3 max-w-5xl mx-auto">
@@ -50,11 +50,10 @@ const Plans = () => {
           <tbody className="text-sm">
             {[
               { feature: "Daily Profit", value: (plan: typeof plans[number]) => `${plan.daily_rate}%` },
-              { feature: "Duration", value: (plan: typeof plans[number]) => `${plan.duration_days} days` },
+              { feature: "Profit Duration", value: () => "Ongoing; can be paused by admin" },
               { feature: "Minimum Deposit", value: (plan: typeof plans[number]) => formatCurrency(plan.min_deposit) },
               { feature: "Maximum Deposit", value: (plan: typeof plans[number]) => plan.max_deposit === null ? "No limit" : formatCurrency(plan.max_deposit) },
               { feature: "Referral Bonus", value: (plan: typeof plans[number]) => `${plan.referral_bonus}%` },
-              { feature: "Capital Return", value: () => "End of plan" },
             ].map(({ feature, value }) => (
               <tr key={feature} className="border-b border-border">
                 <td className="py-3 px-4 text-muted-foreground">{feature}</td>

@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import InvestmentTracking from "@/components/dashboard/InvestmentTracking";
+import TradingViewChart from "@/components/dashboard/TradingViewChart";
 import DepositDialog from "@/components/DepositDialog";
 import WithdrawDialog from "@/components/WithdrawDialog";
 import NotificationBell from "@/components/NotificationBell";
@@ -153,7 +154,7 @@ const Dashboard = () => {
       <div className="container mx-auto px-4 py-6">
         {profitsPaused && (
           <div className="mb-6 rounded-lg border border-warning/30 bg-warning/5 p-4 text-sm text-foreground">
-            Daily profit accrual is paused. Missed days will not be credited, and active investment durations will be extended by the paused period.
+            Daily profit accrual is paused. Missed days will not be credited; existing investments continue on the next scheduled run after profits resume.
           </div>
         )}
 
@@ -231,6 +232,10 @@ const Dashboard = () => {
               </div>
             );
           })}
+        </div>
+
+        <div className="mt-8">
+          <TradingViewChart />
         </div>
 
         {/* Tabs */}

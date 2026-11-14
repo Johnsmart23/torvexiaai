@@ -84,7 +84,6 @@ const InvestDialog = ({ open, onOpenChange, depositBalance, onSuccess }: InvestD
         p_plan_name: selectedPlan.name,
         p_amount: numAmount,
         p_daily_rate: DAILY_INTEREST_RATE,
-        p_duration_days: selectedPlan.duration_days,
       });
 
       if (error) throw error;
@@ -136,13 +135,13 @@ const InvestDialog = ({ open, onOpenChange, depositBalance, onSuccess }: InvestD
                 <div>
                   <p className="font-semibold text-foreground">{plan.name} Plan</p>
                   <p className="text-xs text-muted-foreground">
-                    {DAILY_INTEREST_RATE}% daily · {plan.duration_days} days · Min ${plan.min_deposit}
+                    {DAILY_INTEREST_RATE}% daily · Ongoing · Min ${plan.min_deposit}
                     {plan.max_deposit !== null ? ` · Max $${plan.max_deposit}` : ""}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-bold text-success">{DAILY_INTEREST_RATE}%/day</p>
-                  <p className="text-xs text-muted-foreground">{DAILY_INTEREST_RATE * plan.duration_days}% total</p>
+                  <p className="text-xs text-muted-foreground">Ongoing</p>
                 </div>
               </button>
             ))}
@@ -154,7 +153,7 @@ const InvestDialog = ({ open, onOpenChange, depositBalance, onSuccess }: InvestD
                 <div>
                   <p className="font-semibold text-foreground">{selectedPlan.name} Plan</p>
                   <p className="text-xs text-muted-foreground">
-                    {DAILY_INTEREST_RATE}% daily · {selectedPlan.duration_days} days
+                    {DAILY_INTEREST_RATE}% daily · Ongoing
                   </p>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => setSelectedPlan(null)}>
@@ -208,14 +207,8 @@ const InvestDialog = ({ open, onOpenChange, depositBalance, onSuccess }: InvestD
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total Profit ({selectedPlan.duration_days} days)</span>
-                  <span className="text-success font-medium">
-                    {fmt(parseFloat(amount) * DAILY_INTEREST_RATE / 100 * selectedPlan.duration_days)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Capital Return</span>
-                  <span className="text-foreground font-medium">{fmt(parseFloat(amount))}</span>
+                  <span className="text-muted-foreground">Profit accrues until paused</span>
+                  <span className="text-success font-medium">Ongoing</span>
                 </div>
               </div>
             )}

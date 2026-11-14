@@ -36,7 +36,6 @@ export type Database = {
         Row: {
           created_at: string
           daily_rate: number
-          duration_days: number
           id: string
           is_active: boolean
           max_deposit: number | null
@@ -48,7 +47,6 @@ export type Database = {
         Insert: {
           created_at?: string
           daily_rate: number
-          duration_days?: number
           id?: string
           is_active?: boolean
           max_deposit?: number | null
@@ -60,7 +58,6 @@ export type Database = {
         Update: {
           created_at?: string
           daily_rate?: number
-          duration_days?: number
           id?: string
           is_active?: boolean
           max_deposit?: number | null
@@ -95,8 +92,6 @@ export type Database = {
           created_at: string
           daily_rate: number
           days_completed: number
-          duration_days: number
-          ends_at: string
           id: string
           last_interest_at: string
           plan_name: string
@@ -111,8 +106,6 @@ export type Database = {
           created_at?: string
           daily_rate: number
           days_completed?: number
-          duration_days?: number
-          ends_at?: string
           id?: string
           last_interest_at?: string
           plan_name: string
@@ -127,8 +120,6 @@ export type Database = {
           created_at?: string
           daily_rate?: number
           days_completed?: number
-          duration_days?: number
-          ends_at?: string
           id?: string
           last_interest_at?: string
           plan_name?: string
@@ -416,7 +407,6 @@ export type Database = {
         Args: {
           p_amount: number
           p_daily_rate: number
-          p_duration_days: number
           p_plan_name: string
           p_user_id: string
         }
