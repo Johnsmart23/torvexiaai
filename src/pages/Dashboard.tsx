@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import InvestDialog from "@/components/InvestDialog";
 import InvestmentTracking from "@/components/dashboard/InvestmentTracking";
 import DepositDialog from "@/components/DepositDialog";
 import WithdrawDialog from "@/components/WithdrawDialog";
@@ -49,16 +49,16 @@ const Dashboard = () => {
   const [wallets, setWallets] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [investments, setInvestments] = useState<any[]>([]);
+  const [profitsPaused, setProfitsPaused] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [kycStatus, setKycStatus] = useState("pending");
-  const [investOpen, setInvestOpen] = useState(false);
   const [depositOpen, setDepositOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const [walletsRes, txRes, profileRes, investRes] = await Promise.all([
+      const [walletsRes, txRes, profileRes, investRes, settingsRes] = await Promise.all([
         supabase.from("wallets").select("*").eq("user_id", user.id),
         supabase
           .from("transactions")
@@ -73,11 +73,17 @@ const Dashboard = () => {
           .eq("user_id", user.id)
           .eq("status", "active")
           .order("created_at", { ascending: false }),
+        supabase.from("investment_settings").select("profits_paused").eq("id", 1).single(),
       ]);
       setWallets(walletsRes.data || []);
       setTransactions(txRes.data || []);
       setInvestments(investRes.data || []);
       setKycStatus(profileRes.data?.kyc_status || "pending");
+      if (settingsRes.error) {
+        toast.error("Unable to load current profit status");
+      } else {
+        setProfitsPaused(settingsRes.data.profits_paused);
+      }
       setLoading(false);
     };
     load();
@@ -87,14 +93,20 @@ const Dashboard = () => {
     if (!user) return;
     setLoading(true);
     const load = async () => {
-      const [walletsRes, txRes, investRes] = await Promise.all([
+      const [walletsRes, txRes, investRes, settingsRes] = await Promise.all([
         supabase.from("wallets").select("*").eq("user_id", user.id),
         supabase.from("transactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
         supabase.from("investments").select("*").eq("user_id", user.id).eq("status", "active").order("created_at", { ascending: false }),
+        supabase.from("investment_settings").select("profits_paused").eq("id", 1).single(),
       ]);
       setWallets(walletsRes.data || []);
       setTransactions(txRes.data || []);
       setInvestments(investRes.data || []);
+      if (settingsRes.error) {
+        toast.error("Unable to load current profit status");
+      } else {
+        setProfitsPaused(settingsRes.data.profits_paused);
+      }
       setLoading(false);
     };
     load();
@@ -139,6 +151,12 @@ const Dashboard = () => {
       </header>
 
       <div className="container mx-auto px-4 py-6">
+        {profitsPaused && (
+          <div className="mb-6 rounded-lg border border-warning/30 bg-warning/5 p-4 text-sm text-foreground">
+            Daily profit accrual is paused. Missed days will not be credited, and active investment durations will be extended by the paused period.
+          </div>
+        )}
+
         {/* KYC Banner */}
         {kycStatus !== "approved" && (
           <div className="mb-6 flex items-center gap-3 rounded-lg border border-warning/30 bg-warning/5 p-3">
@@ -172,7 +190,9 @@ const Dashboard = () => {
                   <TrendingUp className="h-5 w-5 text-success" />
                 </div>
                 <p className="mt-2 text-2xl font-bold text-success">{fmt(totalDailyProfit)}</p>
-                <p className="text-xs text-muted-foreground">Earned every day</p>
+                <p className="text-xs text-muted-foreground">
+                  {profitsPaused ? "Accrual paused by admin" : "Expected at current rate"}
+                </p>
               </div>
               <div className="rounded-xl border border-primary/30 bg-primary/5 p-5 shadow-card">
                 <div className="flex items-center justify-between">
@@ -235,7 +255,7 @@ const Dashboard = () => {
             <InvestmentTracking investments={investments} fmt={fmt} />
             {investments.length === 0 && (
               <div className="mt-4 text-center">
-                <Button onClick={() => setInvestOpen(true)}>Invest Now</Button>
+                <Button variant="outline" onClick={() => setDepositOpen(true)}>Deposit Funds</Button>
               </div>
             )}
           </div>
@@ -286,9 +306,6 @@ const Dashboard = () => {
 
         {/* Quick actions */}
         <div className="mt-8 flex flex-wrap gap-3">
-          <Button variant="hero" size="lg" onClick={() => setInvestOpen(true)}>
-            <TrendingUp className="h-4 w-4 mr-1" /> Invest
-          </Button>
           <Button variant="outline" size="lg" onClick={() => setDepositOpen(true)}>Deposit Funds</Button>
           <Button variant="outline" size="lg" onClick={() => setWithdrawOpen(true)}>Withdraw</Button>
           <Button variant="secondary" size="lg">
@@ -297,12 +314,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <InvestDialog
-        open={investOpen}
-        onOpenChange={setInvestOpen}
-        depositBalance={Number(wallets.find((w: any) => w.wallet_type === "deposit")?.balance || 0)}
-        onSuccess={reload}
-      />
       <DepositDialog
         open={depositOpen}
         onOpenChange={setDepositOpen}

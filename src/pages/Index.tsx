@@ -69,7 +69,7 @@ const Index = () => {
           <motion.div variants={fadeUp} className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <Button variant="accent" size="xl" asChild>
               <Link to="/register">
-                Start Investing <ArrowRight className="h-5 w-5" />
+                Create Account <ArrowRight className="h-5 w-5" />
               </Link>
             </Button>
             <Button

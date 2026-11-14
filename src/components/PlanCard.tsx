@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
-import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import type { InvestmentPlan } from "@/hooks/use-investment-plans";
 
@@ -54,9 +53,9 @@ const PlanCard = ({ plan, highlighted }: PlanCardProps) => {
     <Button
       variant={highlighted ? "hero" : "default"}
       className="mt-6 w-full"
-      asChild
+      disabled
     >
-      <Link to="/register">Start Investing</Link>
+      Invest
     </Button>
   </motion.div>
   );

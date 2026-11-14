@@ -71,6 +71,24 @@ export type Database = {
         }
         Relationships: []
       }
+      investment_settings: {
+        Row: {
+          id: number
+          profits_paused: boolean
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          profits_paused?: boolean
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          profits_paused?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       investments: {
         Row: {
           amount: number
@@ -191,6 +209,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          country: string | null
           created_at: string
           email: string | null
           full_name: string | null
@@ -208,6 +227,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          country?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -225,6 +245,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          country?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -399,6 +420,10 @@ export type Database = {
           p_plan_name: string
           p_user_id: string
         }
+        Returns: Json
+      }
+      set_investment_profits_paused: {
+        Args: { p_paused: boolean }
         Returns: Json
       }
     }

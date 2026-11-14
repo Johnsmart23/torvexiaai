@@ -37,6 +37,7 @@ interface UserProfile {
   user_id: string;
   full_name: string | null;
   phone: string | null;
+  country: string | null;
   kyc_status: string;
   kyc_document_url: string | null;
   kyc_rejection_reason: string | null;
@@ -258,7 +259,11 @@ const AdminUserManagement = () => {
 
   const filtered = profiles.filter((p) => {
     const q = search.toLowerCase();
-    return !q || p.full_name?.toLowerCase().includes(q) || p.phone?.toLowerCase().includes(q) || p.user_id.toLowerCase().includes(q);
+    return !q ||
+      p.full_name?.toLowerCase().includes(q) ||
+      p.phone?.toLowerCase().includes(q) ||
+      p.country?.toLowerCase().includes(q) ||
+      p.user_id.toLowerCase().includes(q);
   });
 
   const stats = {
@@ -316,6 +321,7 @@ const AdminUserManagement = () => {
                       )}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">{p.phone || "No phone"}</p>
+                    <p className="text-xs text-muted-foreground truncate">Country: {p.country || "Not provided"}</p>
                     <p className="text-xs text-muted-foreground">Joined {new Date(p.created_at).toLocaleDateString()}</p>
                   </div>
 

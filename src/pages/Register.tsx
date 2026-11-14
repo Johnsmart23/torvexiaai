@@ -26,6 +26,7 @@ const Register = () => {
     fullName: "",
     email: "",
     phone: "",
+    country: "",
     password: "",
     referralCode: "",
   });
@@ -45,6 +46,7 @@ const Register = () => {
           data: {
             full_name: form.fullName,
             phone: form.phone,
+            country: form.country.trim(),
             referral_code: form.referralCode || null,
           },
           emailRedirectTo: `https://investsphere-pro.vercel.app/dashboard`,
@@ -135,6 +137,7 @@ const Register = () => {
             <Input name="fullName" placeholder="Full name" value={form.fullName} onChange={handleChange} required />
             <Input name="email" type="email" placeholder="Email address" value={form.email} onChange={handleChange} required />
             <Input name="phone" type="tel" placeholder="Phone number" value={form.phone} onChange={handleChange} required />
+            <Input name="country" placeholder="Country" value={form.country} onChange={handleChange} autoComplete="country-name" required />
             <Input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} required minLength={6} />
             <Input name="referralCode" placeholder="Referral code (optional)" value={form.referralCode} onChange={handleChange} />
             <Button className="w-full" type="submit" disabled={loading}>
