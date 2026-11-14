@@ -9,6 +9,8 @@ import TradingViewChart from "@/components/dashboard/TradingViewChart";
 import DepositDialog from "@/components/DepositDialog";
 import WithdrawDialog from "@/components/WithdrawDialog";
 import NotificationBell from "@/components/NotificationBell";
+import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useAdmin } from "@/hooks/use-admin";
 import {
   Shield,
   Wallet,
@@ -19,7 +21,10 @@ import {
   Clock,
   CheckCircle,
   LogOut,
+  Menu,
   BarChart3,
+  UserRound,
+  ShieldCheck,
   UserCheck,
   Loader2,
   XCircle,
@@ -27,7 +32,6 @@ import {
 
 const walletMeta: Record<string, { label: string; icon: any; color: string }> = {
   deposit: { label: "Deposit Wallet", icon: Wallet, color: "text-primary" },
-  active_investment: { label: "Active Investments", icon: BarChart3, color: "text-accent" },
   profit: { label: "Profit Wallet", icon: TrendingUp, color: "text-success" },
   referral: { label: "Referral Earnings", icon: Users, color: "text-warning" },
   withdrawable: { label: "Withdrawable", icon: ArrowUpRight, color: "text-primary" },
@@ -46,6 +50,7 @@ const txIcon: Record<string, any> = {
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState<"overview" | "history">("overview");
   const { user, signOut } = useAuth();
+  const { isAdmin } = useAdmin();
   const navigate = useNavigate();
   const [wallets, setWallets] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -53,6 +58,7 @@ const Dashboard = () => {
   const [profitsPaused, setProfitsPaused] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [kycStatus, setKycStatus] = useState("pending");
+  const [referralCode, setReferralCode] = useState("");
   const [depositOpen, setDepositOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
 
@@ -67,7 +73,7 @@ const Dashboard = () => {
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
           .limit(20),
-        supabase.from("profiles").select("kyc_status").eq("user_id", user.id).single(),
+        supabase.from("profiles").select("kyc_status, referral_code").eq("user_id", user.id).single(),
         supabase
           .from("investments")
           .select("*")
@@ -80,6 +86,7 @@ const Dashboard = () => {
       setTransactions(txRes.data || []);
       setInvestments(investRes.data || []);
       setKycStatus(profileRes.data?.kyc_status || "pending");
+      setReferralCode(profileRes.data?.referral_code || "");
       if (settingsRes.error) {
         toast.error("Unable to load current profit status");
       } else {
@@ -116,6 +123,20 @@ const Dashboard = () => {
   const fmt = (n: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
 
+  const copyReferralLink = async () => {
+    if (!referralCode) {
+      toast.error("Your referral code is not available yet");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/register?ref=${referralCode}`);
+      toast.success("Referral link copied");
+    } catch {
+      toast.error("Could not copy referral link");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -125,7 +146,7 @@ const Dashboard = () => {
   }
 
   // Order wallets consistently
-  const walletOrder = ["deposit", "active_investment", "profit", "referral", "withdrawable"];
+  const walletOrder = ["deposit", "profit", "referral", "withdrawable"];
   const sortedWallets = walletOrder
     .map((wt) => wallets.find((w) => w.wallet_type === wt))
     .filter(Boolean);
@@ -142,11 +163,62 @@ const Dashboard = () => {
             <span className="font-bold text-foreground">TorvexiaAI</span>
           </Link>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground hidden sm:inline">{user?.email}</span>
+            <span className="text-sm text-muted-foreground hidden md:inline">{user?.email}</span>
             <NotificationBell />
-            <Button variant="ghost" size="sm" onClick={async () => { await signOut(); navigate("/"); }}>
+            <Button className="hidden md:inline-flex" variant="ghost" size="sm" onClick={async () => { await signOut(); navigate("/"); }}>
               <LogOut className="h-4 w-4" />
             </Button>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open dashboard menu">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[280px] md:hidden">
+                <SheetHeader>
+                  <SheetTitle>Dashboard Menu</SheetTitle>
+                </SheetHeader>
+                <nav className="mt-6 flex flex-col gap-2">
+                  <SheetClose asChild>
+                    <Button variant="ghost" className="justify-start px-3" onClick={() => setDepositOpen(true)}>
+                      <ArrowDownLeft className="h-4 w-4" /> Deposit
+                    </Button>
+                  </SheetClose>
+                  <SheetClose asChild>
+                    <Button variant="ghost" className="justify-start px-3" onClick={() => setWithdrawOpen(true)}>
+                      <ArrowUpRight className="h-4 w-4" /> Withdraw
+                    </Button>
+                  </SheetClose>
+                  <Button variant="ghost" className="justify-start px-3" onClick={() => void copyReferralLink()}>
+                    <Users className="h-4 w-4" /> Referral Link
+                  </Button>
+                  <SheetClose asChild>
+                    <Link to="/" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-secondary">
+                      <Shield className="h-4 w-4" /> Home
+                    </Link>
+                  </SheetClose>
+                  <SheetClose asChild>
+                    <Link to="/profile" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-secondary">
+                      <UserRound className="h-4 w-4" /> Profile
+                    </Link>
+                  </SheetClose>
+                  {isAdmin && (
+                    <SheetClose asChild>
+                      <Link to="/admin" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-secondary">
+                        <ShieldCheck className="h-4 w-4" /> Admin
+                      </Link>
+                    </SheetClose>
+                  )}
+                  <Button
+                    variant="ghost"
+                    className="justify-start px-3"
+                    onClick={async () => { await signOut(); navigate("/"); }}
+                  >
+                    <LogOut className="h-4 w-4" /> Sign Out
+                  </Button>
+                </nav>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </header>

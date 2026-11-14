@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 export type InvestmentPlan = Database["public"]["Tables"]["investment_plans"]["Row"];
 
-export const useInvestmentPlans = ({ includeInactive = false }: { includeInactive?: boolean } = {}) => {
+export const useInvestmentPlans = () => {
   const [plans, setPlans] = useState<InvestmentPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -14,13 +14,11 @@ export const useInvestmentPlans = ({ includeInactive = false }: { includeInactiv
     let active = true;
 
     const fetchPlans = async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from("investment_plans")
         .select("*")
+        .eq("is_active", true)
         .order("min_deposit", { ascending: true });
-      if (!includeInactive) query = query.eq("is_active", true);
-
-      const { data, error } = await query;
       if (!active) return;
       if (error) {
         setErrorMessage(error.message);
@@ -36,7 +34,7 @@ export const useInvestmentPlans = ({ includeInactive = false }: { includeInactiv
     return () => {
       active = false;
     };
-  }, [includeInactive]);
+  }, []);
 
   return { plans, loading, errorMessage };
 };

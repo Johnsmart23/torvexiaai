@@ -7,7 +7,7 @@ const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(amount);
 
 const Plans = () => {
-  const { plans, loading, errorMessage } = useInvestmentPlans({ includeInactive: true });
+  const { plans, loading, errorMessage } = useInvestmentPlans();
 
   return (
   <div className="min-h-screen bg-background">

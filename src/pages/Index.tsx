@@ -36,7 +36,7 @@ const fadeUp = {
 };
 
 const Index = () => {
-  const { plans, loading, errorMessage } = useInvestmentPlans({ includeInactive: true });
+  const { plans, loading, errorMessage } = useInvestmentPlans();
   const maxDailyRate = plans.reduce((max, plan) => Math.max(max, plan.daily_rate), 0);
 
   return (

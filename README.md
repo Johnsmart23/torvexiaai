@@ -66,7 +66,13 @@ Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and 
 
 ## Shared-email accounts
 
-Each account uses a unique username to sign in; the contact email may be shared by multiple accounts. Apply the `20261114092400_shared_contact_email_accounts.sql` migration and deploy the `account-auth` Supabase Edge Function. Configure the Supabase function secrets `RESEND_API_KEY`, `MAIL_FROM` (a sender address verified with Resend), and `SITE_URL` before using signup, confirmation resend, or password recovery for these accounts. Keep the Supabase service-role key in the Edge Function environment only; never expose it in the browser.
+Each account uses a unique username to sign in; the contact email may be shared by multiple accounts. Apply the `20261114092400_shared_contact_email_accounts.sql` migration and deploy the `account-auth` Supabase Edge Function:
+
+```sh
+supabase functions deploy account-auth --project-ref fqdpytsqqijjhnkqtpzm
+```
+
+Configure the Supabase function secrets `RESEND_API_KEY`, `MAIL_FROM` (a sender address verified with Resend), and `SITE_URL` (`https://torvexiaai.vercel.app`) before using signup, confirmation resend, or password recovery for these accounts. Keep the Supabase service-role key in the Edge Function environment only; never expose it in the browser.
 
 ## Can I connect a custom domain to my Lovable project?
 
