@@ -36,7 +36,7 @@ const fadeUp = {
 };
 
 const Index = () => {
-  const { plans, loading } = useInvestmentPlans();
+  const { plans, loading, errorMessage } = useInvestmentPlans();
   const maxDailyRate = plans.reduce((max, plan) => Math.max(max, plan.daily_rate), 0);
 
   return (
@@ -143,6 +143,10 @@ const Index = () => {
         >
           {loading ? (
             <p className="col-span-full py-8 text-center text-sm text-muted-foreground">Loading investment plans...</p>
+          ) : errorMessage ? (
+            <p className="col-span-full py-8 text-center text-sm text-destructive">
+              Plans could not be loaded: {errorMessage}
+            </p>
           ) : plans.length > 0 ? (
             plans.map((plan, index) => (
               <motion.div key={plan.id} variants={fadeUp}>

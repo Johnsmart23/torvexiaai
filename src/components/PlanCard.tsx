@@ -39,7 +39,9 @@ const PlanCard = ({ plan, highlighted }: PlanCardProps) => {
       <span className="text-4xl font-bold text-primary">{plan.daily_rate}%</span>
       <span className="text-sm text-muted-foreground">/ day</span>
     </div>
-    <p className="mt-1 text-sm text-muted-foreground">Ongoing · No fixed end date</p>
+    <p className="mt-1 text-sm text-muted-foreground">
+      {plan.is_active ? "Ongoing · No fixed end date" : "Currently unavailable"}
+    </p>
     <ul className="mt-5 space-y-2">
       {features.map((f) => (
         <li key={f} className="flex items-center gap-2 text-sm text-foreground">

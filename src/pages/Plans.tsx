@@ -7,7 +7,7 @@ const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(amount);
 
 const Plans = () => {
-  const { plans, loading } = useInvestmentPlans();
+  const { plans, loading, errorMessage } = useInvestmentPlans({ includeInactive: true });
 
   return (
   <div className="min-h-screen bg-background">
@@ -22,6 +22,10 @@ const Plans = () => {
       <div className="mt-12 grid gap-6 md:grid-cols-3 max-w-5xl mx-auto">
         {loading ? (
           <p className="col-span-full py-8 text-center text-sm text-muted-foreground">Loading investment plans...</p>
+        ) : errorMessage ? (
+          <p className="col-span-full py-8 text-center text-sm text-destructive">
+            Plans could not be loaded: {errorMessage}
+          </p>
         ) : plans.length > 0 ? (
           plans.map((plan, index) => (
             <PlanCard key={plan.id} plan={plan} highlighted={index === 1} />
