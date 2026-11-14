@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdmin } from "@/hooks/use-admin";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Search,
   CheckCircle,
@@ -29,12 +37,14 @@ import {
   ExternalLink,
   ShieldCheck,
   ShieldOff,
+  Mail,
 } from "lucide-react";
 import { toast } from "sonner";
 
 interface UserProfile {
   id: string;
   user_id: string;
+  email: string | null;
   full_name: string | null;
   phone: string | null;
   country: string | null;
@@ -45,6 +55,19 @@ interface UserProfile {
   is_suspended: boolean;
   created_at: string;
   referral_code: string | null;
+}
+
+interface ActivationPlan {
+  id: string;
+  name: string;
+  min_deposit: number;
+  max_deposit: number | null;
+}
+
+interface UserWallet {
+  id: string;
+  wallet_type: string;
+  balance: number;
 }
 
 const kycColors: Record<string, string> = {
@@ -58,11 +81,13 @@ const fmt = (n: number) =>
 
 const AdminUserManagement = () => {
   const { user: adminUser } = useAuth();
+  const { isSuperAdmin } = useAdmin();
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [resettingPasswordUserId, setResettingPasswordUserId] = useState<string | null>(null);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
-  const [userWallets, setUserWallets] = useState<any[]>([]);
+  const [userWallets, setUserWallets] = useState<UserWallet[]>([]);
   const [userTxs, setUserTxs] = useState<any[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
   // Transfer dialog
@@ -82,17 +107,24 @@ const AdminUserManagement = () => {
   const [interestTransferAmount, setInterestTransferAmount] = useState("");
   const [interestTransferNote, setInterestTransferNote] = useState("");
   const [interestTransferring, setInterestTransferring] = useState(false);
+  // Investment activation
+  const [activationTarget, setActivationTarget] = useState<UserProfile | null>(null);
+  const [activationPlans, setActivationPlans] = useState<ActivationPlan[]>([]);
+  const [activationPlanId, setActivationPlanId] = useState("");
+  const [activationAmount, setActivationAmount] = useState("");
+  const [loadingActivationPlans, setLoadingActivationPlans] = useState(false);
+  const [activatingInvestment, setActivatingInvestment] = useState(false);
 
   useEffect(() => { fetchProfiles(); }, []);
 
   const fetchProfiles = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const profilesResult = await supabase
       .from("profiles")
       .select("*")
       .order("created_at", { ascending: false });
-    if (error) toast.error("Failed to load users");
-    else setProfiles((data as any) || []);
+    if (profilesResult.error) toast.error(profilesResult.error.message || "Failed to load users");
+    else setProfiles((profilesResult.data as any) || []);
     setLoading(false);
   };
 
@@ -153,6 +185,78 @@ const AdminUserManagement = () => {
     setDetailLoading(false);
   };
 
+  const openActivationDialog = async (profile: UserProfile) => {
+    setActivationTarget(profile);
+    setActivationPlans([]);
+    setActivationPlanId("");
+    setActivationAmount("");
+    setLoadingActivationPlans(true);
+
+    const { data, error } = await supabase
+      .from("investment_plans")
+      .select("id, name, min_deposit, max_deposit")
+      .eq("is_active", true)
+      .order("min_deposit", { ascending: true });
+
+    if (error) {
+      toast.error(error.message || "Failed to load active plans");
+      setActivationTarget(null);
+    } else {
+      const plans = data || [];
+      setActivationPlans(plans);
+      setActivationPlanId(plans[0]?.id || "");
+      if (plans.length === 0) toast.error("There are no active plans available");
+    }
+    setLoadingActivationPlans(false);
+  };
+
+  const activateInvestment = async () => {
+    if (!activationTarget || !activationPlanId) return;
+    const amount = Number(activationAmount);
+    const plan = activationPlans.find((candidate) => candidate.id === activationPlanId);
+
+    if (!plan || !Number.isFinite(amount) || amount <= 0) {
+      toast.error("Select an active plan and enter a valid amount");
+      return;
+    }
+    if (amount < plan.min_deposit || (plan.max_deposit !== null && amount > plan.max_deposit)) {
+      toast.error(`Amount must be between ${fmt(plan.min_deposit)} and ${plan.max_deposit === null ? "no limit" : fmt(plan.max_deposit)}`);
+      return;
+    }
+
+    setActivatingInvestment(true);
+    const { data, error } = await supabase.rpc("admin_activate_user_investment", {
+      p_user_id: activationTarget.user_id,
+      p_plan_id: plan.id,
+      p_amount: amount,
+    });
+
+    if (error) {
+      toast.error(error.message || "Failed to activate plan");
+    } else {
+      const result = data as { success?: boolean; error?: string };
+      if (!result.success) {
+        toast.error(result.error || "Failed to activate plan");
+      } else {
+        toast.success(`${plan.name} plan activated for ${activationTarget.full_name || "user"}`);
+        const targetUserId = activationTarget.user_id;
+        setActivationTarget(null);
+        setActivationPlanId("");
+        setActivationAmount("");
+        const [walletsRes, txRes] = await Promise.all([
+          supabase.from("wallets").select("*").eq("user_id", targetUserId),
+          supabase.from("transactions").select("*").eq("user_id", targetUserId)
+            .order("created_at", { ascending: false }).limit(10),
+        ]);
+        if (walletsRes.error) toast.error(walletsRes.error.message || "Failed to refresh user wallets");
+        else setUserWallets(walletsRes.data || []);
+        if (txRes.error) toast.error(txRes.error.message || "Failed to refresh user transactions");
+        else setUserTxs(txRes.data || []);
+      }
+    }
+    setActivatingInvestment(false);
+  };
+
   const handleTransfer = async () => {
     if (!adminUser || !transferTarget) return;
     const amt = parseFloat(transferAmount);
@@ -200,35 +304,54 @@ const AdminUserManagement = () => {
   };
 
   const toggleAdmin = async (profile: UserProfile) => {
-    if (!adminUser) return;
+    if (!adminUser || !isSuperAdmin) return;
     const isCurrentlyAdmin = profile.is_admin;
     try {
-      if (isCurrentlyAdmin) {
-        // Remove admin role
-        const { error } = await supabase
-          .from("user_roles")
-          .delete()
-          .eq("user_id", profile.user_id)
-          .eq("role", "admin");
-        if (error) throw error;
-        // Update profiles table
-        await supabase.from("profiles").update({ is_admin: false }).eq("id", profile.id);
-        toast.success(`${profile.full_name || "User"} removed as admin`);
-        setProfiles((prev) => prev.map((p) => p.id === profile.id ? { ...p, is_admin: false } : p));
-      } else {
-        // Add admin role
-        const { error } = await supabase
-          .from("user_roles")
-          .insert({ user_id: profile.user_id, role: "admin" });
-        if (error) throw error;
-        // Update profiles table
-        await supabase.from("profiles").update({ is_admin: true }).eq("id", profile.id);
-        toast.success(`${profile.full_name || "User"} is now an admin`);
-        setProfiles((prev) => prev.map((p) => p.id === profile.id ? { ...p, is_admin: true } : p));
+      const { data, error } = await supabase.rpc("set_user_admin_role", {
+        p_user_id: profile.user_id,
+        p_make_admin: !isCurrentlyAdmin,
+      });
+      if (error) throw error;
+      if (
+        !data ||
+        typeof data !== "object" ||
+        Array.isArray(data) ||
+        data.success !== true
+      ) {
+        const errorMessage =
+          data && typeof data === "object" && !Array.isArray(data) && typeof data.error === "string"
+            ? data.error
+            : "Failed to update admin status";
+        throw new Error(errorMessage);
       }
+      if (isCurrentlyAdmin) {
+        toast.success(`${profile.full_name || "User"} removed as admin`);
+      } else {
+        toast.success(`${profile.full_name || "User"} is now an admin`);
+      }
+      setProfiles((prev) => prev.map((p) => p.id === profile.id ? { ...p, is_admin: !isCurrentlyAdmin } : p));
     } catch (err: any) {
       toast.error(err?.message || "Failed to update admin status");
     }
+  };
+
+  const sendPasswordReset = async (profile: UserProfile) => {
+    if (!profile.email) {
+      toast.error("This user does not have an email address on their profile");
+      return;
+    }
+
+    setResettingPasswordUserId(profile.user_id);
+    const { error } = await supabase.auth.resetPasswordForEmail(profile.email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    if (error) {
+      toast.error(error.message || "Failed to send password reset email");
+    } else {
+      toast.success(`Password reset link sent to ${profile.email}`);
+    }
+    setResettingPasswordUserId(null);
   };
 
   const handleInterestTransfer = async () => {
@@ -320,6 +443,7 @@ const AdminUserManagement = () => {
                         <Badge variant="outline" className="ml-2 bg-destructive/10 text-destructive border-destructive/30 text-xs">Suspended</Badge>
                       )}
                     </p>
+                    <p className="text-xs text-muted-foreground truncate">{p.email || "Email unavailable"}</p>
                     <p className="text-xs text-muted-foreground truncate">{p.phone || "No phone"}</p>
                     <p className="text-xs text-muted-foreground truncate">Country: {p.country || "Not provided"}</p>
                     <p className="text-xs text-muted-foreground">Joined {new Date(p.created_at).toLocaleDateString()}</p>
@@ -359,9 +483,22 @@ const AdminUserManagement = () => {
                     <Button size="sm" variant="outline" onClick={() => toggleSuspend(p.id, p.is_suspended)} className={p.is_suspended ? "text-success border-success/30" : "text-destructive border-destructive/30"}>
                       {p.is_suspended ? "Unsuspend" : "Suspend"}
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => toggleAdmin(p)} className={p.is_admin ? "text-warning border-warning/30 hover:bg-warning/10" : "text-primary border-primary/30 hover:bg-primary/10"}>
-                      {p.is_admin ? <><ShieldOff className="h-3 w-3 mr-1" /> Remove Admin</> : <><ShieldCheck className="h-3 w-3 mr-1" /> Make Admin</>}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={!p.email || resettingPasswordUserId === p.user_id}
+                      onClick={() => void sendPasswordReset(p)}
+                    >
+                      {resettingPasswordUserId === p.user_id
+                        ? <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                        : <Mail className="mr-1 h-3 w-3" />}
+                      Send Reset Link
                     </Button>
+                    {isSuperAdmin && adminUser?.id !== p.user_id && (
+                      <Button size="sm" variant="outline" onClick={() => void toggleAdmin(p)} className={p.is_admin ? "text-warning border-warning/30 hover:bg-warning/10" : "text-primary border-primary/30 hover:bg-primary/10"}>
+                        {p.is_admin ? <><ShieldOff className="h-3 w-3 mr-1" /> Remove Admin</> : <><ShieldCheck className="h-3 w-3 mr-1" /> Make Admin</>}
+                      </Button>
+                    )}
                     <Button size="sm" variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => { setDeleteTarget(p); setDeleteConfirmText(""); }}>
                       <Trash2 className="h-3 w-3" />
                     </Button>
@@ -400,7 +537,7 @@ const AdminUserManagement = () => {
                             <Wallet className="h-4 w-4" /> Wallets
                           </h4>
                           <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
-                            {userWallets.map((w: any) => (
+                            {userWallets.map((w) => (
                               <div key={w.id} className="rounded-lg border border-border bg-card p-3 text-center">
                                 <p className="text-xs text-muted-foreground capitalize">{w.wallet_type.replace("_", " ")}</p>
                                 <p className="text-sm font-bold text-foreground">{fmt(Number(w.balance))}</p>
@@ -413,6 +550,9 @@ const AdminUserManagement = () => {
                             </Button>
                             <Button size="sm" variant="outline" className="text-accent border-accent/30 hover:bg-accent/10" onClick={() => setInterestTransferTarget(p)}>
                               <Wallet className="h-3 w-3 mr-1" /> Deposit → Interest
+                            </Button>
+                            <Button size="sm" variant="outline" className="text-success border-success/30 hover:bg-success/10" onClick={() => void openActivationDialog(p)}>
+                              <CheckCircle className="h-3 w-3 mr-1" /> Activate Plan
                             </Button>
                           </div>
                         </div>
@@ -523,7 +663,7 @@ const AdminUserManagement = () => {
             <div className="rounded-lg border border-border bg-muted/30 p-3">
               <p className="text-xs text-muted-foreground">User's Deposit Balance</p>
               <p className="text-lg font-bold text-foreground">
-                {fmt(Number(userWallets.find((w: any) => w.wallet_type === "deposit")?.balance || 0))}
+                {fmt(Number(userWallets.find((w) => w.wallet_type === "deposit")?.balance || 0))}
               </p>
             </div>
             <div><Label>Amount (USD)</Label><Input type="number" min="1" placeholder="e.g. 100" value={interestTransferAmount} onChange={(e) => setInterestTransferAmount(e.target.value)} /></div>
@@ -532,6 +672,80 @@ const AdminUserManagement = () => {
               <Button variant="outline" className="flex-1" onClick={() => { setInterestTransferTarget(null); setInterestTransferAmount(""); setInterestTransferNote(""); }}>Cancel</Button>
               <Button className="flex-1" onClick={handleInterestTransfer} disabled={interestTransferring}>
                 {interestTransferring ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null} Transfer
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Activate a plan using the user's approved deposit balance */}
+      <Dialog open={!!activationTarget} onOpenChange={(o) => {
+        if (!o && !activatingInvestment) {
+          setActivationTarget(null);
+          setActivationPlanId("");
+          setActivationAmount("");
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-success" /> Activate User Plan
+            </DialogTitle>
+            <DialogDescription>
+              Select a plan and amount to move from {activationTarget?.full_name || "this user's"} approved deposit balance into an active investment.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <p className="text-xs text-muted-foreground">Available Deposit Balance</p>
+              <p className="text-lg font-bold text-foreground">
+                {fmt(Number(userWallets.find((w) => w.wallet_type === "deposit")?.balance || 0))}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Investment Plan</Label>
+              <Select value={activationPlanId} onValueChange={setActivationPlanId} disabled={loadingActivationPlans || activationPlans.length === 0}>
+                <SelectTrigger>
+                  <SelectValue placeholder={loadingActivationPlans ? "Loading plans..." : "Select a plan"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {activationPlans.map((plan) => (
+                    <SelectItem key={plan.id} value={plan.id}>{plan.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {activationPlans.length === 0 && !loadingActivationPlans && (
+                <p className="text-xs text-muted-foreground">Create or activate a plan before assigning it to a user.</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Investment Amount (USD)</Label>
+              <Input
+                type="number"
+                min={activationPlans.find((plan) => plan.id === activationPlanId)?.min_deposit || 0.01}
+                max={activationPlans.find((plan) => plan.id === activationPlanId)?.max_deposit ?? undefined}
+                step="0.01"
+                value={activationAmount}
+                onChange={(e) => setActivationAmount(e.target.value)}
+                placeholder="Enter amount"
+                disabled={!activationPlanId}
+              />
+              {activationPlanId && (() => {
+                const plan = activationPlans.find((candidate) => candidate.id === activationPlanId);
+                return plan ? (
+                  <p className="text-xs text-muted-foreground">
+                    Allowed: {fmt(plan.min_deposit)} minimum{plan.max_deposit === null ? "" : `, ${fmt(plan.max_deposit)} maximum`}.
+                  </p>
+                ) : null;
+              })()}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setActivationTarget(null)} disabled={activatingInvestment}>
+                Cancel
+              </Button>
+              <Button className="flex-1" onClick={() => void activateInvestment()} disabled={activatingInvestment || loadingActivationPlans || !activationPlanId}>
+                {activatingInvestment ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                Activate Plan
               </Button>
             </div>
           </div>

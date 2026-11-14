@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdmin } from "@/hooks/use-admin";
 import { Button } from "@/components/ui/button";
 import {
   Shield,
@@ -18,8 +19,9 @@ import AdminPlanManagement from "@/components/admin/AdminPlanManagement";
 import AdminTransactionApproval from "@/components/admin/AdminTransactionApproval";
 import AdminPaymentMethodManagement from "@/components/admin/AdminPaymentMethodManagement";
 import AdminProfitControl from "@/components/admin/AdminProfitControl";
+import AdminManagement from "@/components/admin/AdminManagement";
 
-const tabs = [
+const baseTabs = [
   { key: "dashboard" as const, label: "Dashboard", icon: DollarSign },
   { key: "users" as const, label: "Users", icon: Users },
   { key: "approvals" as const, label: "Approvals", icon: CheckSquare },
@@ -28,12 +30,15 @@ const tabs = [
   { key: "profits" as const, label: "Profit Control", icon: TrendingUp },
 ];
 
-type TabKey = (typeof tabs)[number]["key"];
+const superAdminTab = { key: "admins" as const, label: "Admins", icon: Shield };
+type TabKey = (typeof baseTabs)[number]["key"] | "admins";
 
 const Admin = () => {
   const { signOut } = useAuth();
+  const { isSuperAdmin } = useAdmin();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabKey>("dashboard");
+  const tabs = isSuperAdmin ? [...baseTabs, superAdminTab] : baseTabs;
 
   return (
     <div className="min-h-screen bg-background">
@@ -81,6 +86,7 @@ const Admin = () => {
         {activeTab === "plans" && <AdminPlanManagement />}
         {activeTab === "payment-methods" && <AdminPaymentMethodManagement />}
         {activeTab === "profits" && <AdminProfitControl />}
+        {activeTab === "admins" && isSuperAdmin && <AdminManagement />}
       </div>
     </div>
   );

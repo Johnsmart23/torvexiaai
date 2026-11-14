@@ -357,6 +357,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_admin_roster: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          is_super_admin: boolean
+          user_id: string
+        }[]
+      }
+      get_admin_user_emails: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          email: string
+          user_id: string
+        }[]
+      }
+      admin_activate_user_investment: {
+        Args: {
+          p_amount: number
+          p_plan_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       admin_delete_user: {
         Args: { p_admin_id: string; p_user_id: string }
         Returns: Json
@@ -403,6 +428,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_super_admin: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
       process_investment: {
         Args: {
           p_amount: number
@@ -414,6 +443,10 @@ export type Database = {
       }
       set_investment_profits_paused: {
         Args: { p_paused: boolean }
+        Returns: Json
+      }
+      set_user_admin_role: {
+        Args: { p_make_admin: boolean; p_user_id: string }
         Returns: Json
       }
     }

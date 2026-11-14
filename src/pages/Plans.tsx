@@ -16,7 +16,7 @@ const Plans = () => {
       <div className="text-center">
         <h1 className="text-4xl font-bold text-foreground">Investment Plans</h1>
         <p className="mt-3 text-lg text-muted-foreground max-w-xl mx-auto">
-          Choose a plan that matches your investment goals. Profits continue until paused by an administrator.
+          Plans are automatically assigned by the system based on the amount deposited. Similarly, each plan is automatically terminated according to the duration and conditions associated with the deposit category it falls under.
         </p>
       </div>
       <div className="mt-12 grid gap-6 md:grid-cols-3 max-w-5xl mx-auto">
