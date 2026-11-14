@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/accordion";
 
 const faqs = [
-  { q: "How does InvestSphere generate profits?", a: "InvestSphere employs professional investment strategies across diversified markets. Returns are calculated daily and credited to your profit wallet automatically." },
+  { q: "How does TorvexiaAI generate profits?", a: "TorvexiaAI employs professional investment strategies across diversified markets. Returns are calculated daily and credited to your profit wallet automatically." },
   { q: "Is my investment safe?", a: "We implement bank-grade 256-bit encryption, KYC verification, manual withdrawal approvals, and 24/7 anti-fraud monitoring. All transactions are ledger-based for full auditability." },
   { q: "How do I deposit funds?", a: "You can deposit via bank transfer (USD) or cryptocurrency (USDT). Deposits require admin approval before funds appear in your wallet." },
   { q: "When can I withdraw my capital?", a: "Capital is returned at the end of your investment plan (30 days). Daily profits can be withdrawn or reinvested at any time after KYC verification." },

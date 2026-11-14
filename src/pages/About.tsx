@@ -7,9 +7,9 @@ const About = () => (
     <Navbar />
     <div className="container mx-auto px-4 py-16">
       <div className="mx-auto max-w-3xl">
-        <h1 className="text-4xl font-bold text-foreground">About InvestSphere</h1>
+        <h1 className="text-4xl font-bold text-foreground">About TorvexiaAI</h1>
         <p className="mt-4 text-lg text-muted-foreground">
-          InvestSphere is a professional investment management platform designed to provide transparent, 
+          TorvexiaAI is a professional investment management platform designed to provide transparent,
           secure, and accessible wealth-building opportunities for investors worldwide.
         </p>
 
@@ -39,7 +39,7 @@ const About = () => (
               <h4 className="font-semibold text-foreground">Risk Disclaimer</h4>
               <p className="mt-1 text-sm text-muted-foreground">
                 All investments carry risk. Past performance does not guarantee future results. 
-                Invest only what you can afford to lose. InvestSphere provides tools and management 
+                Invest only what you can afford to lose. TorvexiaAI provides tools and management
                 services but cannot guarantee returns. Please read our full risk disclosure before investing.
               </p>
             </div>

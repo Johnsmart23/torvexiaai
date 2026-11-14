@@ -10,7 +10,7 @@ const Footer = () => (
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <Shield className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="text-lg font-bold text-foreground">InvestSphere</span>
+            <span className="text-lg font-bold text-foreground">TorvexiaAI</span>
           </div>
           <p className="text-sm text-muted-foreground">
             Secure, transparent, and professionally managed investment platform.
@@ -41,7 +41,7 @@ const Footer = () => (
         </div>
       </div>
       <div className="mt-8 border-t border-border pt-6 text-center text-xs text-muted-foreground">
-        <p>© 2026 InvestSphere. All rights reserved. Investing involves risk. Past performance does not guarantee future results.</p>
+        <p>© 2026 TorvexiaAI. All rights reserved. Investing involves risk. Past performance does not guarantee future results.</p>
       </div>
     </div>
   </footer>
