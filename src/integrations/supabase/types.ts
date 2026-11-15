@@ -36,6 +36,7 @@ export type Database = {
         Row: {
           created_at: string
           daily_rate: number
+          duration_days: number
           id: string
           is_active: boolean
           max_deposit: number | null
@@ -47,6 +48,7 @@ export type Database = {
         Insert: {
           created_at?: string
           daily_rate: number
+          duration_days?: number
           id?: string
           is_active?: boolean
           max_deposit?: number | null
@@ -58,6 +60,7 @@ export type Database = {
         Update: {
           created_at?: string
           daily_rate?: number
+          duration_days?: number
           id?: string
           is_active?: boolean
           max_deposit?: number | null
@@ -68,32 +71,15 @@ export type Database = {
         }
         Relationships: []
       }
-      investment_settings: {
-        Row: {
-          id: number
-          profits_paused: boolean
-          updated_at: string
-        }
-        Insert: {
-          id?: number
-          profits_paused?: boolean
-          updated_at?: string
-        }
-        Update: {
-          id?: number
-          profits_paused?: boolean
-          updated_at?: string
-        }
-        Relationships: []
-      }
       investments: {
         Row: {
           amount: number
           created_at: string
           daily_rate: number
           days_completed: number
+          duration_days: number
+          ends_at: string
           id: string
-          last_interest_at: string
           plan_name: string
           started_at: string
           status: Database["public"]["Enums"]["investment_status"]
@@ -106,8 +92,9 @@ export type Database = {
           created_at?: string
           daily_rate: number
           days_completed?: number
+          duration_days?: number
+          ends_at?: string
           id?: string
-          last_interest_at?: string
           plan_name: string
           started_at?: string
           status?: Database["public"]["Enums"]["investment_status"]
@@ -120,8 +107,9 @@ export type Database = {
           created_at?: string
           daily_rate?: number
           days_completed?: number
+          duration_days?: number
+          ends_at?: string
           id?: string
-          last_interest_at?: string
           plan_name?: string
           started_at?: string
           status?: Database["public"]["Enums"]["investment_status"]
@@ -200,7 +188,6 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
-          country: string | null
           created_at: string
           email: string | null
           full_name: string | null
@@ -213,13 +200,11 @@ export type Database = {
           phone: string | null
           referral_code: string | null
           referred_by: string | null
-          username: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           avatar_url?: string | null
-          country?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -232,13 +217,11 @@ export type Database = {
           phone?: string | null
           referral_code?: string | null
           referred_by?: string | null
-          username?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           avatar_url?: string | null
-          country?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -251,7 +234,6 @@ export type Database = {
           phone?: string | null
           referral_code?: string | null
           referred_by?: string | null
-          username?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -360,31 +342,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_admin_roster: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          created_at: string
-          email: string | null
-          full_name: string | null
-          is_super_admin: boolean
-          user_id: string
-        }[]
-      }
-      get_admin_user_emails: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          email: string
-          user_id: string
-        }[]
-      }
-      admin_activate_user_investment: {
-        Args: {
-          p_amount: number
-          p_plan_id: string
-          p_user_id: string
-        }
-        Returns: Json
-      }
       admin_delete_user: {
         Args: { p_admin_id: string; p_user_id: string }
         Returns: Json
@@ -431,25 +388,14 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_super_admin: {
-        Args: { p_user_id: string }
-        Returns: boolean
-      }
       process_investment: {
         Args: {
           p_amount: number
           p_daily_rate: number
+          p_duration_days: number
           p_plan_name: string
           p_user_id: string
         }
-        Returns: Json
-      }
-      set_investment_profits_paused: {
-        Args: { p_paused: boolean }
-        Returns: Json
-      }
-      set_user_admin_role: {
-        Args: { p_make_admin: boolean; p_user_id: string }
         Returns: Json
       }
     }
