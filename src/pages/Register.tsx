@@ -129,12 +129,12 @@ const Register = () => {
           <p className="mt-1 text-sm text-muted-foreground">Start your investment journey</p>
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
             <Input name="fullName" placeholder="Full name" value={form.fullName} onChange={handleChange} required />
-            <Input name="username" placeholder="Unique username (used to sign in)" value={form.username} onChange={handleChange} required minLength={3} maxLength={32} pattern="[A-Za-z0-9][A-Za-z0-9._-]{2,31}" autoComplete="username" />
-            <Input name="email" type="email" placeholder="Contact email (can be shared across accounts)" value={form.email} onChange={handleChange} required />
-            <Input name="phone" type="tel" placeholder="Phone number" value={form.phone} onChange={handleChange} required />
+            <Input name="username" placeholder="Username" value={form.username} onChange={handleChange} required minLength={3} maxLength={32} pattern="[A-Za-z0-9][A-Za-z0-9._-]{2,31}" autoComplete="username" />
+            <Input name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} required />
+            <Input name="phone" type="tel" placeholder="Phone no" value={form.phone} onChange={handleChange} required />
             <Input name="country" placeholder="Country" value={form.country} onChange={handleChange} autoComplete="country-name" required />
             <Input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} required minLength={6} />
-            <Input name="referralCode" placeholder="Referral code (optional)" value={form.referralCode} onChange={handleChange} />
+            <Input name="referralCode" placeholder="Referral code" value={form.referralCode} onChange={handleChange} />
             <Button className="w-full" type="submit" disabled={loading}>
               {loading ? <Loader2 className="animate-spin" /> : "Create Account"}
             </Button>

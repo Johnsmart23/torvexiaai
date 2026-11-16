@@ -21,7 +21,7 @@ const BackToTopButton = () => {
       variant="default"
       aria-label="Back to top"
       title="Back to top"
-      className="fixed bottom-6 right-6 z-[60] rounded-full shadow-lg"
+      className="fixed bottom-6 right-24 z-[60] rounded-full shadow-lg"
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
     >
       <ArrowUp className="h-5 w-5" />

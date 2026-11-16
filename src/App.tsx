@@ -21,6 +21,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import BackToTopButton from "@/components/BackToTopButton";
+import SupportChatButton from "@/components/SupportChatButton";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <BackToTopButton />
+            <SupportChatButton />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/about" element={<About />} />
