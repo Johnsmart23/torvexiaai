@@ -110,6 +110,10 @@ const AdminUserManagement = () => {
   const [interestTransferAmount, setInterestTransferAmount] = useState("");
   const [interestTransferNote, setInterestTransferNote] = useState("");
   const [interestTransferring, setInterestTransferring] = useState(false);
+  const [profitTransferTarget, setProfitTransferTarget] = useState<UserProfile | null>(null);
+  const [profitTransferAmount, setProfitTransferAmount] = useState("");
+  const [profitTransferNote, setProfitTransferNote] = useState("");
+  const [profitTransferring, setProfitTransferring] = useState(false);
   // Investment activation
   const [activationTarget, setActivationTarget] = useState<UserProfile | null>(null);
   const [activationPlans, setActivationPlans] = useState<ActivationPlan[]>([]);
@@ -412,6 +416,59 @@ const AdminUserManagement = () => {
     setInterestTransferring(false);
   };
 
+  const targetProfitBalance = userWallets.find((wallet) => wallet.wallet_type === "profit")?.balance;
+
+  const handleProfitTransfer = async () => {
+    if (!adminUser || !profitTransferTarget) return;
+    const amount = Number(profitTransferAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error("Enter a valid amount");
+      return;
+    }
+
+    setProfitTransferring(true);
+    try {
+      const { data, error } = await supabase.rpc("admin_transfer_profit_to_withdrawable", {
+        p_admin_id: adminUser.id,
+        p_user_id: profitTransferTarget.user_id,
+        p_amount: amount,
+        p_note: profitTransferNote.trim(),
+      });
+
+      if (error) {
+        toast.error(error.message || "Transfer failed");
+        return;
+      }
+      const result = data as { success?: boolean; error?: string } | null;
+      if (!result?.success) {
+        toast.error(result?.error || "Transfer failed");
+        return;
+      }
+
+      toast.success(`${fmt(amount)} transferred from Profit to Withdrawable wallet`);
+      const targetUserId = profitTransferTarget.user_id;
+      setProfitTransferTarget(null);
+      setProfitTransferAmount("");
+      setProfitTransferNote("");
+
+      if (expandedUser === targetUserId) {
+        const [walletsRes, txRes] = await Promise.all([
+          supabase.from("wallets").select("*").eq("user_id", targetUserId),
+          supabase.from("transactions").select("*").eq("user_id", targetUserId)
+            .order("created_at", { ascending: false }).limit(10),
+        ]);
+        if (walletsRes.error) toast.error(walletsRes.error.message || "Transfer succeeded, but wallet balances could not be refreshed");
+        else setUserWallets(walletsRes.data || []);
+        if (txRes.error) toast.error(txRes.error.message || "Transfer succeeded, but transactions could not be refreshed");
+        else setUserTxs(txRes.data || []);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "An unexpected error occurred");
+    } finally {
+      setProfitTransferring(false);
+    }
+  };
+
   const filtered = profiles.filter((p) => {
     const q = search.toLowerCase();
     return !q ||
@@ -589,12 +646,15 @@ const AdminUserManagement = () => {
                               </div>
                             ))}
                           </div>
-                          <div className="flex gap-2 mt-2">
+                          <div className="flex flex-wrap gap-2 mt-2">
                             <Button size="sm" variant="outline" className="text-primary border-primary/30 hover:bg-primary/10" onClick={() => setTransferTarget(p)}>
                               <Send className="h-3 w-3 mr-1" /> Transfer Funds
                             </Button>
                             <Button size="sm" variant="outline" className="text-accent border-accent/30 hover:bg-accent/10" onClick={() => setInterestTransferTarget(p)}>
                               <Wallet className="h-3 w-3 mr-1" /> Deposit → Interest
+                            </Button>
+                            <Button size="sm" variant="outline" className="text-success border-success/30 hover:bg-success/10" onClick={() => setProfitTransferTarget(p)}>
+                              <Wallet className="h-3 w-3 mr-1" /> Profit → Withdrawable
                             </Button>
                             <Button size="sm" variant="outline" className="text-success border-success/30 hover:bg-success/10" onClick={() => void openActivationDialog(p)}>
                               <CheckCircle className="h-3 w-3 mr-1" /> Activate Plan
@@ -647,6 +707,45 @@ const AdminUserManagement = () => {
               <Button variant="outline" className="flex-1" onClick={() => { setTransferTarget(null); setTransferAmount(""); setTransferNote(""); }}>Cancel</Button>
               <Button className="flex-1" onClick={handleTransfer} disabled={transferring}>
                 {transferring ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null} Send Funds
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!profitTransferTarget} onOpenChange={(open) => {
+        if (!open && !profitTransferring) {
+          setProfitTransferTarget(null);
+          setProfitTransferAmount("");
+          setProfitTransferNote("");
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Wallet className="h-5 w-5 text-success" /> Transfer Profit to Withdrawable</DialogTitle>
+            <DialogDescription>
+              Move funds from {profitTransferTarget?.full_name || "this user's"} profit wallet to their withdrawable wallet. The transfer cannot exceed the available profit balance.
+              {targetProfitBalance !== undefined && <> Available profit balance: <span className="font-medium">{fmt(Number(targetProfitBalance))}</span>.</>}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Amount (USD)</Label>
+              <Input type="number" min="0.01" step="0.01" placeholder="e.g. 50" value={profitTransferAmount} onChange={(event) => setProfitTransferAmount(event.target.value)} />
+            </div>
+            <div>
+              <Label>Note (optional)</Label>
+              <Input placeholder="e.g. Profit withdrawal transfer" value={profitTransferNote} onChange={(event) => setProfitTransferNote(event.target.value)} />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" disabled={profitTransferring} onClick={() => {
+                setProfitTransferTarget(null);
+                setProfitTransferAmount("");
+                setProfitTransferNote("");
+              }}>Cancel</Button>
+              <Button className="flex-1" onClick={handleProfitTransfer} disabled={profitTransferring}>
+                {profitTransferring ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                Transfer Funds
               </Button>
             </div>
           </div>

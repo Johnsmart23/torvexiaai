@@ -367,31 +367,64 @@ const Dashboard = () => {
             ) : (
               transactions.map((tx: any) => {
                 const Icon = txIcon[tx.transaction_type] || ArrowUpRight;
-                const isDebit = ["withdrawal", "investment"].includes(tx.transaction_type);
+                const isDebit = ["withdrawal", "investment"].includes(tx.transaction_type) ||
+                  (tx.transaction_type === "transfer" && tx.wallet_type === "profit" &&
+                    (tx.description?.startsWith("Admin transfer (Profit to Withdrawable):") ?? false));
                 return (
-                  <div key={tx.id} className="flex items-center gap-3 rounded-lg border border-border bg-card p-4 shadow-card">
-                    <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${isDebit ? "bg-destructive/10" : "bg-success/10"}`}>
-                      <Icon className={`h-4 w-4 ${isDebit ? "text-destructive" : "text-success"}`} />
+                  <div key={tx.id} className="rounded-lg border border-border bg-card p-4 shadow-card">
+                    <div className="flex items-center gap-3">
+                      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${isDebit ? "bg-destructive/10" : "bg-success/10"}`}>
+                        <Icon className={`h-4 w-4 ${isDebit ? "text-destructive" : "text-success"}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground capitalize">
+                          {tx.transaction_type.replaceAll("_", " ")}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-sm font-semibold ${isDebit ? "text-destructive" : "text-success"}`}>
+                          {isDebit ? "-" : "+"}{fmt(Math.abs(Number(tx.amount)))}
+                        </p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
+                          {tx.status === "pending" ? <Clock className="h-3 w-3" /> :
+                           tx.status === "rejected" ? <XCircle className="h-3 w-3" /> :
+                           <CheckCircle className="h-3 w-3" />}
+                          <span className="capitalize">{tx.status}</span>
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground capitalize">
-                        {tx.transaction_type.replace("_", " ")}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className={`text-sm font-semibold ${isDebit ? "text-destructive" : "text-success"}`}>
-                        {isDebit ? "-" : "+"}{fmt(Math.abs(Number(tx.amount)))}
-                      </p>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
-                        {tx.status === "pending" ? <Clock className="h-3 w-3" /> : 
-                         tx.status === "rejected" ? <XCircle className="h-3 w-3" /> : 
-                         <CheckCircle className="h-3 w-3" />}
-                        <span className="capitalize">{tx.status}</span>
-                      </p>
-                    </div>
+                    <details className="mt-3 border-t border-border pt-3">
+                      <summary className="cursor-pointer text-xs font-medium text-primary hover:underline">
+                        View transaction details
+                      </summary>
+                      <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
+                        <div>
+                          <dt className="text-muted-foreground">Description</dt>
+                          <dd className="mt-0.5 break-words text-foreground">{tx.description || "No description provided"}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-muted-foreground">Wallet</dt>
+                          <dd className="mt-0.5 capitalize text-foreground">{tx.wallet_type.replaceAll("_", " ")}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-muted-foreground">Date and time</dt>
+                          <dd className="mt-0.5 text-foreground">{new Date(tx.created_at).toLocaleString()}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-muted-foreground">Transaction reference</dt>
+                          <dd className="mt-0.5 break-all font-mono text-foreground">{tx.id}</dd>
+                        </div>
+                        {tx.admin_note && (
+                          <div className="sm:col-span-2">
+                            <dt className="text-muted-foreground">Admin note</dt>
+                            <dd className="mt-0.5 break-words text-foreground">{tx.admin_note}</dd>
+                          </div>
+                        )}
+                      </dl>
+                    </details>
                   </div>
                 );
               })

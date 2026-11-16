@@ -355,6 +355,15 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_transfer_profit_to_withdrawable: {
+        Args: {
+          p_admin_id: string
+          p_amount: number
+          p_note?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       admin_transfer_to_user: {
         Args: {
           p_admin_id: string
