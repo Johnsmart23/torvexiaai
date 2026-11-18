@@ -137,15 +137,16 @@ Deno.serve(async (request: Request) => {
     return jsonResponse(405, { success: false, error: "Method not allowed" });
   }
 
-  if (!resendApiKey || !mailFrom) {
-    return jsonResponse(503, { success: false, error: "Account email delivery is not configured" });
-  }
-
   let body: RequestBody;
   try {
     body = await request.json();
   } catch {
     return jsonResponse(400, { success: false, error: "Invalid request body" });
+  }
+
+  // Only the email-based actions need Resend. Signup does not.
+  if (body.action !== "signup" && (!resendApiKey || !mailFrom)) {
+    return jsonResponse(503, { success: false, error: "Account email delivery is not configured" });
   }
 
   try {
@@ -165,49 +166,27 @@ Deno.serve(async (request: Request) => {
       if (lookupError) throw new Error("Unable to check username availability");
       if (existingUser) return jsonResponse(409, { success: false, error: "That username is already taken" });
 
-      const recipientHash = await hashRecipient(email);
-      const { data: allowed, error: limitError } = await serviceClient.rpc("consume_account_auth_email_limit", {
-        p_recipient_hash: recipientHash,
-        p_action: "signup",
-        p_max_requests: 5,
-        p_window_seconds: 3600,
-      });
-      if (limitError) throw new Error("Unable to process signup right now");
-      if (!allowed) return jsonResponse(429, { success: false, error: "Too many signup emails for this address. Try again later." });
-
-      const generated = await serviceClient.auth.admin.generateLink({
-        type: "signup",
+      // Create the account already confirmed, so no confirmation email is needed.
+      const created = await serviceClient.auth.admin.createUser({
         email: authEmailForUsername(username),
         password,
-        options: {
-          data: {
-            username,
-            contact_email: email,
-            full_name: (body.full_name || "").trim(),
-            phone: (body.phone || "").trim(),
-            country: (body.country || "").trim(),
-            referral_code: body.referral_code || null,
-          },
-          redirectTo: `${siteUrl}/dashboard`,
+        email_confirm: true,
+        user_metadata: {
+          username,
+          contact_email: email,
+          full_name: (body.full_name || "").trim(),
+          phone: (body.phone || "").trim(),
+          country: (body.country || "").trim(),
+          referral_code: body.referral_code || null,
         },
       });
 
-      if (generated.error) {
-        console.error("Account creation failed", generated.error.message);
+      if (created.error) {
+        console.error("Account creation failed", created.error.message);
         return jsonResponse(400, { success: false, error: "Could not create account. The username may already be in use." });
       }
 
-      try {
-        await sendEmail(
-          email,
-          "Confirm your account",
-          generated.data.properties.action_link,
-          "Confirm your email address",
-        );
-        return jsonResponse(200, { success: true, email_sent: true });
-      } catch {
-        return jsonResponse(200, { success: true, email_sent: false });
-      }
+      return jsonResponse(200, { success: true, email_sent: false });
     }
 
     if (body.action === "resend-confirmation" || body.action === "reset-password") {
